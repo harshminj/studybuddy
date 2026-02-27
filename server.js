@@ -346,6 +346,8 @@ io.on("connection", (socket) => {
 // ============================================================
 // START
 // ============================================================
+app.get("/", (req, res) => res.json({ message: "StudyBuddy API is running! 🎓", version: "1.0" }));
+app.get("/api", (req, res) => res.json({ message: "StudyBuddy API is running! 🎓", version: "1.0" }));
 server.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════╗
