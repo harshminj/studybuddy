@@ -258,4 +258,10 @@ io.on("connection", (socket) => {
 app.get("/", (req, res) => res.json({ message: "StudyBuddy API is running! 🎓", version: "1.0" }));
 app.get("/api", (req, res) => res.json({ message: "StudyBuddy API is running! 🎓", version: "1.0" }));
 
+// Keep-alive ping every 14 minutes to prevent Render from sleeping
+setInterval(() => {
+  const http = require("http");
+  http.get(`http://localhost:${PORT}/api`, () => {}).on("error", () => {});
+}, 14 * 60 * 1000);
+
 server.listen(PORT, () => console.log(`StudyBuddy API running on port ${PORT}`));
