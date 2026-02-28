@@ -1,48 +1,44 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// ============================================================
-// ⚙️ CONFIG — Change this to your PHP backend URL
-// ============================================================
-const API = "http://studybuddy.infinityfreeapp.com/api";
-// Example: const API = "http://studybuddy.infinityfreeapp.com/api";
+const API = "https://studybuddyy-bfop.onrender.com/api";
 
-// ============================================================
-// 🔑 TOKEN STORAGE — saves login across page refreshes
-// ============================================================
-const getToken      = ()    => localStorage.getItem("sb_token");
-const setToken      = (t)   => localStorage.setItem("sb_token", t);
-const clearToken    = ()    => localStorage.removeItem("sb_token");
-const getStoredUser = ()    => { try { return JSON.parse(localStorage.getItem("sb_user")); } catch { return null; } };
-const setStoredUser = (u)   => localStorage.setItem("sb_user", JSON.stringify(u));
-const clearStoredUser = ()  => localStorage.removeItem("sb_user");
+const EMAILJS_SERVICE  = "service_a77q18z";
+const EMAILJS_TEMPLATE = "template_k2zpwrj";
+const EMAILJS_KEY      = "VuMsqcmyX4NX7oHvi";
 
-// ============================================================
-// 🌐 API HELPER — all fetch calls go through here
-// ============================================================
+const getToken       = ()    => localStorage.getItem("sb_token");
+const setToken       = (t)   => localStorage.setItem("sb_token", t);
+const clearToken     = ()    => localStorage.removeItem("sb_token");
+const getStoredUser  = ()    => { try { return JSON.parse(localStorage.getItem("sb_user")); } catch { return null; } };
+const setStoredUser  = (u)   => localStorage.setItem("sb_user", JSON.stringify(u));
+const clearStoredUser = ()   => localStorage.removeItem("sb_user");
+
 async function apiFetch(path, options = {}) {
   const token = getToken();
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Something went wrong");
-  return data;
+  try {
+    const res = await fetch(`${API}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong");
+    return data;
+  } catch (err) {
+    if (err.message === "Failed to fetch" || err.message === "Load failed") {
+      throw new Error("Server is waking up... Please wait 30 seconds and try again!");
+    }
+    throw err;
+  }
 }
 
-// ============================================================
-// DESIGN SYSTEM
-// ============================================================
 const style = `
   @import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8dc;
     --accent: #e8500a; --accent2: #2563eb; --muted: #8a8070;
@@ -52,8 +48,6 @@ const style = `
   body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
   h1,h2,h3,h4,h5 { font-family: 'Clash Display', sans-serif; }
   .app { min-height: 100vh; display: flex; flex-direction: column; }
-
-  /* NAV */
   .nav { background: var(--ink); color: var(--paper); padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .nav-logo { font-family: 'Clash Display', sans-serif; font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
   .nav-logo span { color: var(--accent); }
@@ -65,8 +59,6 @@ const style = `
   .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; }
   .logout-btn { background: rgba(255,255,255,0.1); border: none; color: #bbb; padding: 0.35rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
-
-  /* AUTH */
   .auth-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; min-height: 100vh; background: linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #0d0d0d 100%); }
   .auth-card { background: var(--card); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); }
   .auth-logo { text-align: center; margin-bottom: 1.5rem; }
@@ -92,8 +84,6 @@ const style = `
   .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
   .step-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
   .err-msg { background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2); color: var(--red); border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.85rem; margin-bottom: 1rem; }
-
-  /* LAYOUT */
   .main { flex: 1; padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
   .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.3rem; }
   .page-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
@@ -102,8 +92,6 @@ const style = `
   .loading { display: flex; align-items: center; justify-content: center; padding: 3rem; color: var(--muted); gap: 0.5rem; font-size: 0.9rem; }
   .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink:0; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* DISCOVER */
   .discover-wrapper { display: flex; gap: 1.5rem; }
   .discover-filters { width: 240px; flex-shrink: 0; }
   .discover-cards { flex: 1; }
@@ -111,7 +99,7 @@ const style = `
   .filter-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; color: var(--muted); margin-bottom: 0.6rem; }
   .filter-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.8rem; border-radius: 20px; border: 1.5px solid var(--border); font-size: 0.82rem; cursor: pointer; margin: 0.2rem; transition: all 0.15s; background: var(--cream); }
   .filter-chip.active { border-color: var(--accent); background: rgba(232,80,10,0.08); color: var(--accent); font-weight: 600; }
-  .profile-card { background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+  .profile-card { background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; }
   .profile-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(13,13,13,0.15); }
   .profile-card-banner { height: 100px; }
   .profile-card-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; border: 3px solid var(--card); margin-top: -28px; flex-shrink: 0; }
@@ -126,8 +114,6 @@ const style = `
   .btn-like:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-pass { flex: 1; background: var(--cream); color: var(--muted); border: 1.5px solid var(--border); border-radius: 10px; padding: 0.55rem; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
   .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
-
-  /* MESSAGES */
   .match-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 14px; cursor: pointer; transition: background 0.15s; border: 1px solid var(--border); margin-bottom: 0.6rem; background: var(--card); }
   .match-row:hover { background: var(--cream); }
   .match-row.active { background: rgba(37,99,235,0.07); border-color: var(--accent2); }
@@ -153,8 +139,6 @@ const style = `
   .chat-input:focus { border-color: var(--accent2); background: #fff; }
   .chat-send { background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 0.6rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
   .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 0.5rem; }
-
-  /* PROFILE */
   .profile-hero { background: var(--ink); color: var(--paper); border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
   .profile-hero-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 2rem; font-weight: 700; color: #fff; flex-shrink: 0; }
   .profile-hero-info h2 { font-size: 1.5rem; margin-bottom: 0.2rem; }
@@ -162,8 +146,6 @@ const style = `
   .style-options { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.4rem; }
   .style-opt { padding: 0.45rem 1rem; border-radius: 20px; border: 1.5px solid var(--border); cursor: pointer; font-size: 0.85rem; transition: all 0.15s; background: var(--cream); }
   .style-opt.selected { background: var(--accent2); border-color: var(--accent2); color: #fff; font-weight: 600; }
-
-  /* POMODORO */
   .timer-circle { width: 200px; height: 200px; border-radius: 50%; margin: 1.5rem auto; background: conic-gradient(var(--accent) calc(var(--prog, 100) * 1%), var(--cream) 0); display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 2.8rem; font-weight: 700; box-shadow: 0 0 0 12px var(--cream), 0 0 0 14px var(--border); }
   .timer-controls { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1rem; }
   .timer-btn { padding: 0.55rem 1.4rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-family: 'Clash Display', sans-serif; font-size: 0.95rem; }
@@ -173,13 +155,9 @@ const style = `
   .goals-list li input[type=checkbox] { accent-color: var(--accent2); width: 16px; height: 16px; cursor: pointer; }
   .goal-input-row { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
   .goal-input { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 0.5rem 0.8rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; background: var(--cream); }
-
-  /* RATING */
   .star { font-size: 1.6rem; cursor: pointer; transition: transform 0.1s; }
   .star:hover { transform: scale(1.2); }
   .rating-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
-
-  /* ADMIN */
   .stat-card { background: var(--card); border-radius: 14px; padding: 1.2rem 1.5rem; border: 1px solid var(--border); }
   .stat-num { font-family: 'Clash Display', sans-serif; font-size: 2rem; font-weight: 700; }
   .stat-label { color: var(--muted); font-size: 0.85rem; margin-top: 0.1rem; }
@@ -190,14 +168,12 @@ const style = `
   .badge { display: inline-flex; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
   .badge-active { background: rgba(22,163,74,0.1); color: var(--green); }
   .badge-admin  { background: rgba(232,80,10,0.1); color: var(--accent); }
-
-  /* TOAST */
   .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; background: var(--ink); color: var(--paper); padding: 0.75rem 1.25rem; border-radius: 12px; font-size: 0.9rem; font-weight: 500; box-shadow: var(--shadow-lg); animation: slideup 0.3s ease; max-width: 320px; }
   .toast.success { border-left: 4px solid var(--green); }
   .toast.match   { border-left: 4px solid var(--accent); }
   .toast.error   { border-left: 4px solid var(--red); }
   @keyframes slideup { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
+  .otp-input { width: 100%; text-align: center; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.8rem; padding: 0.9rem 1rem; border: 2.5px solid var(--accent); border-radius: 14px; background: var(--cream); outline: none; font-family: 'Clash Display', sans-serif; }
   @media (max-width: 768px) {
     .discover-wrapper { flex-direction: column; }
     .discover-filters { width: 100%; }
@@ -216,17 +192,11 @@ const userColor     = (id) => COLORS[(id || 0) % COLORS.length];
 const getInitials   = (name) => (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 const fmtTime       = (ts)  => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-// ============================================================
-// TOAST
-// ============================================================
 function Toast({ msg, type, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
   return <div className={`toast ${type}`}>{msg}</div>;
 }
 
-// ============================================================
-// AUTH — all 3 steps fully wired to PHP API
-// ============================================================
 function Auth({ onLogin }) {
   const [tab,        setTab]        = useState("login");
   const [step,       setStep]       = useState(1);
@@ -236,19 +206,14 @@ function Auth({ onLogin }) {
   const [loginPass,  setLoginPass]  = useState("");
   const [email,      setEmail]      = useState("");
   const [password,   setPassword]   = useState("");
-  const [otp,        setOtp]        = useState(["","","","",""]);
+  const [otpValue,   setOtpValue]   = useState("");
   const [name,       setName]       = useState("");
   const [college,    setCollege]    = useState("");
   const [location,   setLocation]   = useState("");
   const [subjects,   setSubjects]   = useState([]);
   const [studyStyle, setStudyStyle] = useState("");
-  const otpRefs = useRef([]);
+  const [otpData,    setOtpData]    = useState(null);
 
-  const handleOtpInput = (i, val) => {
-    if (!/^\d*$/.test(val)) return;
-    const n = [...otp]; n[i] = val.slice(-1); setOtp(n);
-    if (val && i < 4) otpRefs.current[i + 1]?.focus();
-  };
   const toggleSubject = (s) => setSubjects(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const doLogin = async () => {
@@ -263,7 +228,21 @@ function Auth({ onLogin }) {
   const doSendOtp = async () => {
     setError(""); setLoading(true);
     try {
-      await apiFetch("/auth/send-otp", { method: "POST", body: { email } });
+      const data = await apiFetch("/auth/send-otp", { method: "POST", body: { email } });
+      setOtpData(data);
+      // Send via EmailJS
+      try {
+        await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            service_id: EMAILJS_SERVICE,
+            template_id: EMAILJS_TEMPLATE,
+            user_id: EMAILJS_KEY,
+            template_params: { to_email: email, otp: String(data.otp) }
+          })
+        });
+      } catch (emailErr) { console.log("EmailJS:", emailErr); }
       setStep(2);
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -272,7 +251,7 @@ function Auth({ onLogin }) {
   const doVerifyOtp = async () => {
     setError(""); setLoading(true);
     try {
-      const data = await apiFetch("/auth/verify-otp", { method: "POST", body: { email, otp: otp.join("") } });
+      const data = await apiFetch("/auth/verify-otp", { method: "POST", body: { email, otp: otpValue } });
       setToken(data.token);
       setStep(3);
     } catch (e) { setError(e.message); }
@@ -307,7 +286,6 @@ function Auth({ onLogin }) {
 
         {error && <div className="err-msg">⚠ {error}</div>}
 
-        {/* LOGIN */}
         {tab === "login" && (
           <>
             <div className="form-group"><label>Email</label><input type="email" placeholder="you@college.edu" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} /></div>
@@ -317,7 +295,6 @@ function Auth({ onLogin }) {
           </>
         )}
 
-        {/* SIGNUP */}
         {tab === "signup" && (
           <>
             <div className="step-indicator">
@@ -334,16 +311,23 @@ function Auth({ onLogin }) {
 
             {step === 2 && (
               <>
-                <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "0.88rem", marginBottom: "1rem" }}>
+                <p style={{ textAlign:"center", color:"var(--muted)", fontSize:"0.88rem", marginBottom:"1rem" }}>
                   Enter the 5-digit OTP sent to <strong>{email}</strong>
                 </p>
-                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.2rem" }}>
-                  {otp.map((v, i) => (
-                    <input key={i} ref={el => otpRefs.current[i] = el} value={v} onChange={e => handleOtpInput(i, e.target.value)} maxLength={1}
-                      style={{ flex: 1, textAlign: "center", fontSize: "1.5rem", fontWeight: 700, padding: "0.6rem 0", border: "1.5px solid var(--border)", borderRadius: "10px", background: "var(--cream)", outline: "none" }} />
-                  ))}
+                <div className="form-group">
+                  <input
+                    className="otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={5}
+                    placeholder="- - - - -"
+                    value={otpValue}
+                    onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g, "").slice(0, 5))}
+                    autoFocus
+                  />
                 </div>
-                <button className="btn btn-primary" onClick={doVerifyOtp} disabled={loading || otp.join("").length < 5}>{loading ? "Verifying..." : "Verify OTP →"}</button>
+                <button className="btn btn-primary" onClick={doVerifyOtp} disabled={loading || otpValue.length < 5}>{loading ? "Verifying..." : "Verify OTP →"}</button>
                 <p className="auth-switch"><a onClick={doSendOtp}>Resend OTP</a></p>
               </>
             )}
@@ -365,7 +349,7 @@ function Auth({ onLogin }) {
                     {SUBJECTS_LIST.map(s => <div key={s} className={`style-opt ${subjects.includes(s) ? "selected" : ""}`} onClick={() => toggleSubject(s)}>{s}</div>)}
                   </div>
                 </div>
-                <button className="btn btn-primary" style={{ marginTop: "0.5rem" }} onClick={doSignup} disabled={loading || !name || !college}>
+                <button className="btn btn-primary" style={{ marginTop:"0.5rem" }} onClick={doSignup} disabled={loading || !name || !college}>
                   {loading ? "Creating account..." : "Create Account 🎉"}
                 </button>
               </>
@@ -377,22 +361,19 @@ function Auth({ onLogin }) {
   );
 }
 
-// ============================================================
-// DISCOVER — real API calls to PHP /discover + /like
-// ============================================================
 function Discover({ user, onMatch, onToast }) {
-  const [users,         setUsers]         = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [liking,        setLiking]        = useState(null);
-  const [styleFilter,   setStyleFilter]   = useState("");
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [liking, setLiking] = useState(null);
+  const [styleFilter, setStyleFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (styleFilter)   params.set("style",   styleFilter);
-      if (subjectFilter) params.set("subject",  subjectFilter);
+      if (styleFilter) params.set("style", styleFilter);
+      if (subjectFilter) params.set("subject", subjectFilter);
       const data = await apiFetch(`/discover?${params}`);
       setUsers(data);
     } catch (e) { onToast(e.message, "error"); }
@@ -436,7 +417,6 @@ function Discover({ user, onMatch, onToast }) {
             <div className="filter-chip" style={{ color:"var(--red)", borderColor:"var(--red)" }} onClick={() => { setStyleFilter(""); setSubjectFilter(""); }}>✕ Clear</div>
           )}
         </div>
-
         <div className="discover-cards">
           {loading && <div className="loading"><div className="spinner" /> Finding students...</div>}
           {!loading && users.length === 0 && (
@@ -477,21 +457,16 @@ function Discover({ user, onMatch, onToast }) {
   );
 }
 
-// ============================================================
-// MESSAGES — real matches + polling-based real-time chat
-// ============================================================
 function Messages({ user, onToast }) {
-  const [matches,  setMatches]  = useState([]);
-  const [active,   setActive]   = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [input,    setInput]    = useState("");
-  const [loading,  setLoading]  = useState(true);
-  const [sending,  setSending]  = useState(false);
-  const lastIdRef  = useRef(0);
-  const pollRef    = useRef(null);
-  const bottomRef  = useRef();
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const pollRef = useRef(null);
+  const bottomRef = useRef();
 
-  // Load all matches
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -504,29 +479,18 @@ function Messages({ user, onToast }) {
     })();
   }, []);
 
-  // When active match changes → load messages + start polling
   useEffect(() => {
     if (!active) return;
-    setMessages([]); lastIdRef.current = 0;
-
-    // Initial fetch
+    setMessages([]);
     apiFetch(`/messages/${active.match_id}`).then(data => {
-      setMessages(data);
-      if (data.length > 0) lastIdRef.current = data[data.length - 1].id;
+      if (Array.isArray(data)) setMessages(data);
     }).catch(() => {});
 
-    // Poll every 3s for new messages
     clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`${API.replace("/api","")}chat_poll.php?match_id=${active.match_id}&last_id=${lastIdRef.current}`, {
-          headers: { Authorization: `Bearer ${getToken()}` }
-        });
-        const data = await res.json();
-        if (data.messages?.length > 0) {
-          setMessages(p => [...p, ...data.messages]);
-          lastIdRef.current = data.messages[data.messages.length - 1].id;
-        }
+        const data = await apiFetch(`/messages/${active.match_id}`);
+        if (Array.isArray(data)) setMessages(data);
       } catch {}
     }, 3000);
 
@@ -541,7 +505,6 @@ function Messages({ user, onToast }) {
     try {
       const msg = await apiFetch(`/messages/${active.match_id}`, { method: "POST", body: { text } });
       setMessages(p => [...p, msg]);
-      lastIdRef.current = msg.id;
       setMatches(p => p.map(m => m.match_id === active.match_id ? { ...m, last_message: text } : m));
     } catch (e) { onToast(e.message, "error"); setInput(text); }
     setSending(false);
@@ -570,7 +533,6 @@ function Messages({ user, onToast }) {
             </div>
           ))}
         </div>
-
         <div className="chat-main">
           {!active ? (
             <div className="chat-empty"><div style={{ fontSize:"2rem" }}>💬</div><div>Select a match to chat</div></div>
@@ -587,9 +549,7 @@ function Messages({ user, onToast }) {
               </div>
               <div className="chat-messages">
                 {messages.length === 0 && (
-                  <div style={{ textAlign:"center", color:"var(--muted)", padding:"2rem", fontSize:"0.9rem" }}>
-                    Start the conversation! 👋
-                  </div>
+                  <div style={{ textAlign:"center", color:"var(--muted)", padding:"2rem", fontSize:"0.9rem" }}>Start the conversation! 👋</div>
                 )}
                 {messages.map((m, i) => (
                   <div key={m.id || i} className={`msg ${m.sender_id === user.id ? "me" : "them"}`}>
@@ -612,19 +572,14 @@ function Messages({ user, onToast }) {
   );
 }
 
-// ============================================================
-// PROFILE — GET + PUT to PHP API
-// ============================================================
 function Profile({ user, setUser, onToast }) {
-  const [name,       setName]       = useState(user.name     || "");
-  const [college,    setCollege]    = useState(user.college  || "");
-  const [location,   setLocation]   = useState(user.location || "");
-  const [subjects,   setSubjects]   = useState(user.subjects || []);
-  const [studyStyle, setStudyStyle] = useState(user.style    || "");
-  const [loading,    setLoading]    = useState(false);
-
+  const [name, setName] = useState(user.name || "");
+  const [college, setCollege] = useState(user.college || "");
+  const [location, setLocation] = useState(user.location || "");
+  const [subjects, setSubjects] = useState(user.subjects || []);
+  const [studyStyle, setStudyStyle] = useState(user.style || "");
+  const [loading, setLoading] = useState(false);
   const toggleSubject = (s) => setSubjects(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
-
   const save = async () => {
     setLoading(true);
     try {
@@ -635,7 +590,6 @@ function Profile({ user, setUser, onToast }) {
     } catch (e) { onToast(e.message, "error"); }
     setLoading(false);
   };
-
   return (
     <div>
       <div className="profile-hero">
@@ -673,18 +627,14 @@ function Profile({ user, setUser, onToast }) {
   );
 }
 
-// ============================================================
-// STUDY TOOLS — local only (timer + goals)
-// ============================================================
 function StudyTools({ onToast }) {
-  const [secs,    setSecs]    = useState(25*60);
+  const [secs, setSecs] = useState(25*60);
   const [running, setRunning] = useState(false);
-  const [mode,    setMode]    = useState("focus");
-  const [goals,   setGoals]   = useState([]);
+  const [mode, setMode] = useState("focus");
+  const [goals, setGoals] = useState([]);
   const [newGoal, setNewGoal] = useState("");
   const total = mode==="focus" ? 25*60 : 5*60;
   const prog  = ((total-secs)/total)*100;
-
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => {
@@ -695,11 +645,9 @@ function StudyTools({ onToast }) {
     }, 1000);
     return () => clearInterval(t);
   }, [running, mode]);
-
   const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
   const switchMode = (m) => { setMode(m); setSecs(m==="focus"?25*60:5*60); setRunning(false); };
-  const addGoal    = ()  => { if (!newGoal.trim()) return; setGoals(p=>[...p,{id:Date.now(),text:newGoal,done:false}]); setNewGoal(""); };
-
+  const addGoal = () => { if (!newGoal.trim()) return; setGoals(p=>[...p,{id:Date.now(),text:newGoal,done:false}]); setNewGoal(""); };
   return (
     <div>
       <h2 className="page-title">Study Tools</h2>
@@ -712,12 +660,8 @@ function StudyTools({ onToast }) {
           </div>
           <div className="timer-circle" style={{"--prog":prog}}>{fmt(secs)}</div>
           <div className="timer-controls">
-            <button className="timer-btn" style={{ background:"var(--ink)", color:"var(--paper)" }} onClick={() => setRunning(p=>!p)}>
-              {running ? "⏸ Pause" : "▶ Start"}
-            </button>
-            <button className="timer-btn" style={{ background:"var(--cream)", border:"1.5px solid var(--border)" }} onClick={() => { setRunning(false); setSecs(mode==="focus"?25*60:5*60); }}>
-              ↺ Reset
-            </button>
+            <button className="timer-btn" style={{ background:"var(--ink)", color:"var(--paper)" }} onClick={() => setRunning(p=>!p)}>{running ? "⏸ Pause" : "▶ Start"}</button>
+            <button className="timer-btn" style={{ background:"var(--cream)", border:"1.5px solid var(--border)" }} onClick={() => { setRunning(false); setSecs(mode==="focus"?25*60:5*60); }}>↺ Reset</button>
           </div>
         </div>
         <div className="card">
@@ -747,18 +691,14 @@ function StudyTools({ onToast }) {
   );
 }
 
-// ============================================================
-// RATING — POST to PHP /ratings API
-// ============================================================
 function Rating({ user, onToast }) {
-  const [matches,    setMatches]    = useState([]);
-  const [selected,   setSelected]   = useState("");
-  const [ratings,    setRatings]    = useState({ punctuality:0, helpfulness:0, focus:0 });
-  const [feedback,   setFeedback]   = useState("");
-  const [submitted,  setSubmitted]  = useState(false);
-  const [loading,    setLoading]    = useState(true);
+  const [matches, setMatches] = useState([]);
+  const [selected, setSelected] = useState("");
+  const [ratings, setRatings] = useState({ punctuality:0, helpfulness:0, focus:0 });
+  const [feedback, setFeedback] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   useEffect(() => {
     (async () => {
       try { const d = await apiFetch("/matches"); setMatches(d); if(d.length>0) setSelected(d[0].id); }
@@ -766,13 +706,9 @@ function Rating({ user, onToast }) {
       setLoading(false);
     })();
   }, []);
-
   const star = (cat, val) => setRatings(p => ({ ...p, [cat]:val }));
-
   const submit = async () => {
-    if (!selected || !ratings.punctuality || !ratings.helpfulness || !ratings.focus) {
-      onToast("Please fill all star ratings", "error"); return;
-    }
+    if (!selected || !ratings.punctuality || !ratings.helpfulness || !ratings.focus) { onToast("Please fill all star ratings", "error"); return; }
     setSubmitting(true);
     try {
       await apiFetch("/ratings", { method:"POST", body:{ toId:selected, ...ratings, feedback } });
@@ -780,19 +716,14 @@ function Rating({ user, onToast }) {
     } catch(e) { onToast(e.message,"error"); }
     setSubmitting(false);
   };
-
   const StarRow = ({ label, cat }) => (
     <div className="rating-row">
       <div style={{ fontWeight:500, fontSize:"0.9rem" }}>{label}</div>
       <div>{[1,2,3,4,5].map(v=><span key={v} className="star" onClick={()=>star(cat,v)}>{v<=ratings[cat]?"⭐":"☆"}</span>)}</div>
     </div>
   );
-
   if (loading) return <div className="loading"><div className="spinner"/></div>;
-  if (!matches.length) return (
-    <div><h2 className="page-title">Rate Your Partner</h2><p className="page-sub">Get some matches first!</p></div>
-  );
-
+  if (!matches.length) return <div><h2 className="page-title">Rate Your Partner</h2><p className="page-sub">Get some matches first!</p></div>;
   return (
     <div>
       <h2 className="page-title">Rate Your Partner</h2>
@@ -808,14 +739,12 @@ function Rating({ user, onToast }) {
           <>
             <StarRow label="⏰ Punctuality" cat="punctuality"/>
             <StarRow label="🤝 Helpfulness" cat="helpfulness"/>
-            <StarRow label="🎯 Focus"       cat="focus"/>
+            <StarRow label="🎯 Focus" cat="focus"/>
             <div className="form-group" style={{ marginTop:"1rem" }}>
               <label>Written Feedback (optional)</label>
               <textarea rows={3} placeholder="Share your experience..." style={{ resize:"vertical" }} value={feedback} onChange={e=>setFeedback(e.target.value)}/>
             </div>
-            <button className="btn btn-primary" style={{ marginTop:"0.5rem" }} onClick={submit} disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Rating"}
-            </button>
+            <button className="btn btn-primary" style={{ marginTop:"0.5rem" }} onClick={submit} disabled={submitting}>{submitting ? "Submitting..." : "Submit Rating"}</button>
           </>
         ) : (
           <div style={{ textAlign:"center", padding:"2rem", color:"var(--green)" }}>
@@ -829,15 +758,11 @@ function Rating({ user, onToast }) {
   );
 }
 
-// ============================================================
-// ADMIN — fetches real data from PHP /admin API
-// ============================================================
 function Admin({ onToast }) {
-  const [stats,    setStats]    = useState(null);
-  const [users,    setUsers]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
-
   useEffect(() => {
     (async () => {
       try {
@@ -847,7 +772,6 @@ function Admin({ onToast }) {
       setLoading(false);
     })();
   }, []);
-
   const deleteUser = async (id, name) => {
     if (!window.confirm(`Remove ${name}?`)) return;
     setDeleting(id);
@@ -857,16 +781,13 @@ function Admin({ onToast }) {
     } catch(e) { onToast(e.message,"error"); }
     setDeleting(null);
   };
-
   if (loading) return <div className="loading"><div className="spinner"/> Loading dashboard...</div>;
-
   const statCards = [
-    { label:"Total Users",     num:stats?.totalUsers    ||0, icon:"👥" },
-    { label:"Total Matches",   num:stats?.totalMatches  ||0, icon:"💞" },
-    { label:"Total Messages",  num:stats?.totalMessages ||0, icon:"💬" },
-    { label:"Today's Signups", num:stats?.todaySignups  ||0, icon:"🆕" },
+    { label:"Total Users", num:stats?.totalUsers||0, icon:"👥" },
+    { label:"Total Matches", num:stats?.totalMatches||0, icon:"💞" },
+    { label:"Total Messages", num:stats?.totalMessages||0, icon:"💬" },
+    { label:"Today's Signups", num:stats?.todaySignups||0, icon:"🆕" },
   ];
-
   return (
     <div>
       <h2 className="page-title">Admin Dashboard</h2>
@@ -887,25 +808,12 @@ function Admin({ onToast }) {
           <tbody>
             {users.map(u=>(
               <tr key={u.id}>
-                <td>
-                  <div style={{ display:"flex", alignItems:"center", gap:"0.6rem" }}>
-                    <div className="match-avatar" style={{ width:30, height:30, fontSize:"0.75rem", background:userColor(u.id) }}>
-                      {u.initials||getInitials(u.name)}
-                    </div>{u.name}
-                  </div>
-                </td>
+                <td><div style={{ display:"flex", alignItems:"center", gap:"0.6rem" }}><div className="match-avatar" style={{ width:30, height:30, fontSize:"0.75rem", background:userColor(u.id) }}>{u.initials||getInitials(u.name)}</div>{u.name}</div></td>
                 <td style={{ fontSize:"0.82rem", color:"var(--muted)" }}>{u.email}</td>
                 <td>{u.college}</td>
                 <td>{u.style&&<span className="tag tag-style">{u.style}</span>}</td>
                 <td><span className={`badge ${u.is_admin?"badge-admin":"badge-active"}`}>{u.is_admin?"Admin":"Active"}</span></td>
-                <td>
-                  {!u.is_admin&&(
-                    <button className="btn btn-outline btn-sm" style={{ fontSize:"0.78rem", color:"var(--red)", borderColor:"var(--red)" }}
-                      onClick={()=>deleteUser(u.id,u.name)} disabled={deleting===u.id}>
-                      {deleting===u.id?"...":"Remove"}
-                    </button>
-                  )}
-                </td>
+                <td>{!u.is_admin&&(<button className="btn btn-outline btn-sm" style={{ fontSize:"0.78rem", color:"var(--red)", borderColor:"var(--red)" }} onClick={()=>deleteUser(u.id,u.name)} disabled={deleting===u.id}>{deleting===u.id?"...":"Remove"}</button>)}</td>
               </tr>
             ))}
           </tbody>
@@ -915,18 +823,13 @@ function Admin({ onToast }) {
   );
 }
 
-// ============================================================
-// MATCH POPUP
-// ============================================================
 function MatchPopup({ match, onClose }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(13,13,13,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
       <div style={{ background:"var(--card)", borderRadius:"24px", padding:"2.5rem", textAlign:"center", maxWidth:"340px", width:"100%", boxShadow:"var(--shadow-lg)" }}>
         <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>🎉</div>
         <h2 style={{ color:"var(--accent)", marginBottom:"0.3rem" }}>It's a Match!</h2>
-        <p style={{ color:"var(--muted)", marginBottom:"1.5rem", fontSize:"0.9rem" }}>
-          You and <strong>{match.name}</strong> liked each other!
-        </p>
+        <p style={{ color:"var(--muted)", marginBottom:"1.5rem", fontSize:"0.9rem" }}>You and <strong>{match.name}</strong> liked each other!</p>
         <div style={{ display:"flex", gap:"0.5rem" }}>
           <button className="btn btn-outline btn-sm" style={{ flex:1 }} onClick={()=>onClose(false)}>Continue</button>
           <button className="btn btn-primary btn-sm" style={{ flex:1 }} onClick={()=>onClose(true)}>Message →</button>
@@ -936,24 +839,18 @@ function MatchPopup({ match, onClose }) {
   );
 }
 
-// ============================================================
-// APP ROOT
-// ============================================================
 export default function App() {
-  const [authed,     setAuthed]     = useState(!!getToken() && !!getStoredUser());
-  const [user,       setUser]       = useState(getStoredUser());
-  const [tab,        setTab]        = useState("discover");
-  const [toast,      setToast]      = useState(null);
+  const [authed, setAuthed] = useState(!!getToken() && !!getStoredUser());
+  const [user, setUser] = useState(getStoredUser());
+  const [tab, setTab] = useState("discover");
+  const [toast, setToast] = useState(null);
   const [matchPopup, setMatchPopup] = useState(null);
 
-  // Validate token on first load
   useEffect(() => {
     if (!getToken()) return;
     apiFetch("/profile/me").then(data => {
       setUser(data); setStoredUser(data); setAuthed(true);
-    }).catch(() => {
-      clearToken(); clearStoredUser(); setAuthed(false);
-    });
+    }).catch(() => { clearToken(); clearStoredUser(); setAuthed(false); });
   }, []);
 
   const showToast = (msg, type="success") => setToast({ msg, type });
