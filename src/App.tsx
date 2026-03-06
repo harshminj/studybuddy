@@ -174,14 +174,19 @@ const style = `
   .toast.error   { border-left: 4px solid var(--red); }
   @keyframes slideup { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   .otp-input { width: 100%; text-align: center; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.8rem; padding: 0.9rem 1rem; border: 2.5px solid var(--accent); border-radius: 14px; background: var(--cream); outline: none; font-family: 'Clash Display', sans-serif; }
+  .mobile-nav { display: none; }
   @media (max-width: 768px) {
     .discover-wrapper { flex-direction: column; }
     .discover-filters { width: 100%; }
     .chat-layout { flex-direction: column; height: auto; }
     .chat-sidebar { width: 100%; }
     .grid-2 { grid-template-columns: 1fr; }
-    .main { padding: 1rem; }
+    .main { padding: 1rem; padding-bottom: 80px; }
     .nav-tabs { display: none; }
+    .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--ink); z-index: 200; border-top: 1px solid rgba(255,255,255,0.1); padding: 0.4rem 0 0.6rem; }
+    .mobile-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; color: #888; cursor: pointer; padding: 0.3rem 0; font-size: 0.6rem; font-family: 'DM Sans', sans-serif; transition: color 0.15s; }
+    .mobile-nav-btn.active { color: var(--accent); }
+    .mobile-nav-btn span:first-child { font-size: 1.2rem; }
   }
 `;
 
@@ -904,6 +909,21 @@ export default function App() {
       </div>
       {matchPopup && <MatchPopup match={matchPopup} onClose={handleMatchClose}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      <nav className="mobile-nav">
+        {[
+          { id:"discover", icon:"🔍", label:"Discover" },
+          { id:"messages", icon:"💬", label:"Messages" },
+          { id:"tools",    icon:"⏱",  label:"Tools" },
+          { id:"rating",   icon:"⭐", label:"Rate" },
+          { id:"profile",  icon:"👤", label:"Profile" },
+          { id:"admin",    icon:"⚙",  label:"Admin" },
+        ].map(t => (
+          <button key={t.id} className={`mobile-nav-btn ${tab===t.id?"active":""}`} onClick={()=>setTab(t.id)}>
+            <span>{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
     </>
   );
 }
