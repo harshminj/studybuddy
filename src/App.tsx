@@ -179,6 +179,23 @@ const style = `
   .toast.error   { border-left: 4px solid var(--red); }
   @keyframes slideup { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   .otp-input { width: 100%; text-align: center; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.8rem; padding: 0.9rem 1rem; border: 2.5px solid var(--accent); border-radius: 14px; background: var(--cream); outline: none; font-family: 'Clash Display', sans-serif; }
+  .room-card { background: var(--card); border-radius: 18px; border: 1px solid var(--border); overflow: hidden; transition: transform 0.15s, box-shadow 0.15s; }
+  .room-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .room-banner { height: 80px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+  .room-body { padding: 1rem 1.2rem 1.2rem; }
+  .room-name { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .room-meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
+  .room-members { display: flex; gap: -6px; margin-bottom: 0.75rem; }
+  .room-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: #fff; margin-right: -6px; overflow: hidden; }
+  .room-inside { background: var(--ink); color: var(--paper); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .room-timer-display { font-family: 'Clash Display', sans-serif; font-size: 4rem; font-weight: 700; text-align: center; letter-spacing: -2px; }
+  .room-phase { text-align: center; font-size: 0.9rem; color: #aaa; margin-bottom: 1rem; }
+  .lofi-player { background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1rem; margin-top: 1rem; display: flex; align-items: center; gap: 1rem; }
+  .lofi-info { flex: 1; }
+  .lofi-title { font-weight: 600; font-size: 0.9rem; }
+  .lofi-sub { font-size: 0.75rem; color: #888; }
+  .lofi-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .member-chip { display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.08); border-radius: 20px; padding: 0.3rem 0.75rem 0.3rem 0.3rem; font-size: 0.8rem; }
   .mobile-nav { display: none; }
   @media (max-width: 768px) {
     .discover-wrapper { flex-direction: column; }
@@ -1074,6 +1091,222 @@ function Friends({ user, onToast, onMessage }) {
   );
 }
 
+
+const LOFI_TRACKS = [
+  { title: "Lo-Fi Hip Hop", sub: "Beats to study/relax to", emoji: "🎵", url: "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&controls=0" },
+  { title: "Jazz Cafe Vibes", sub: "Smooth focus music", emoji: "🎷", url: "https://www.youtube.com/embed/VMAPTo7RVCo?autoplay=1&controls=0" },
+  { title: "Rainy Day Focus", sub: "Rain + ambient sounds", emoji: "🌧️", url: "https://www.youtube.com/embed/mPZkdNFkNps?autoplay=1&controls=0" },
+  { title: "Deep Focus", sub: "No distractions", emoji: "🧠", url: "https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1&controls=0" },
+];
+
+const PRESET_ROOMS = [
+  { id:"r1", name:"Lo-Fi Focus Room", emoji:"🎧", bg:"linear-gradient(135deg,#1e1b4b,#312e81)", subject:"General", vibe:"Quiet focus + lo-fi beats" },
+  { id:"r2", name:"Math & Science Hub", emoji:"🔬", bg:"linear-gradient(135deg,#064e3b,#065f46)", subject:"Math/Science", vibe:"Collaborative problem solving" },
+  { id:"r3", name:"Code & Build", emoji:"💻", bg:"linear-gradient(135deg,#1e3a5f,#1e40af)", subject:"CS/Programming", vibe:"Deep work sessions" },
+  { id:"r4", name:"Exam Prep Zone", emoji:"📚", bg:"linear-gradient(135deg,#7c2d12,#9a3412)", subject:"All subjects", vibe:"Intense study mode" },
+  { id:"r5", name:"Chill Study Lounge", emoji:"☕", bg:"linear-gradient(135deg,#422006,#713f12)", subject:"Any", vibe:"Relaxed pace, any topic" },
+  { id:"r6", name:"Night Owl Session", emoji:"🌙", bg:"linear-gradient(135deg,#0f172a,#1e293b)", subject:"Any", vibe:"Late night grinders only" },
+];
+
+function StudyRooms({ user, onToast }) {
+  const [activeRoom, setActiveRoom] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [trackIdx, setTrackIdx] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [pomSecs, setPomSecs] = useState(25 * 60);
+  const [pomRunning, setPomRunning] = useState(false);
+  const [pomMode, setPomMode] = useState("focus"); // focus | break
+  const [chat, setChat] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const iframeRef = useRef(null);
+  const chatBottomRef = useRef(null);
+
+  const POM_TIMES = { focus: 25 * 60, break: 5 * 60 };
+
+  // Pomodoro timer
+  useEffect(() => {
+    if (!pomRunning) return;
+    const t = setInterval(() => {
+      setPomSecs(p => {
+        if (p <= 1) {
+          setPomRunning(false);
+          const next = pomMode === "focus" ? "break" : "focus";
+          setPomMode(next);
+          setPomSecs(POM_TIMES[next]);
+          onToast(pomMode === "focus" ? "🎉 Focus done! Take a break" : "💪 Break over! Back to work", "success");
+          return POM_TIMES[next];
+        }
+        return p - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [pomRunning, pomMode]);
+
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const pomPct = ((POM_TIMES[pomMode] - pomSecs) / POM_TIMES[pomMode]) * 100;
+
+  const joinRoom = (room) => {
+    setActiveRoom(room);
+    setPomSecs(25 * 60); setPomMode("focus"); setPomRunning(false);
+    setPlaying(false); setTrackIdx(0);
+    // Simulate other members in room
+    const fakeMembers = [
+      { id: "f1", name: "Alex", initials: "AX", color: "#7c3aed" },
+      { id: "f2", name: "Sam", initials: "SM", color: "#2563eb" },
+      { id: "f3", name: "Mia", initials: "MI", color: "#db2777" },
+    ].slice(0, Math.floor(Math.random() * 3) + 1);
+    setMembers([{ id: user.id, name: user.name, initials: user.initials || getInitials(user.name), color: "#e8500a", photo: user.photo }, ...fakeMembers]);
+    setChat([{ id: 1, from: "System", text: `Welcome to ${room.name}! Stay focused 🎯`, sys: true }]);
+  };
+
+  const leaveRoom = () => { setActiveRoom(null); setPlaying(false); setPomRunning(false); };
+
+  const sendChat = () => {
+    if (!chatInput.trim()) return;
+    setChat(p => [...p, { id: Date.now(), from: user.name, text: chatInput.trim(), mine: true }]);
+    setChatInput("");
+    setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  };
+
+  // Room list view
+  if (!activeRoom) return (
+    <div>
+      <h2 className="page-title">🎧 Study Rooms</h2>
+      <p className="page-sub">Join a virtual room, study together with lo-fi beats</p>
+      <div className="grid-2">
+        {PRESET_ROOMS.map(room => {
+          const count = Math.floor(Math.random() * 8) + 1;
+          return (
+            <div key={room.id} className="room-card">
+              <div className="room-banner" style={{ background: room.bg }}>{room.emoji}</div>
+              <div className="room-body">
+                <div className="room-name">{room.name}</div>
+                <div className="room-meta">📖 {room.subject} · ✨ {room.vibe}</div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:"0.5rem" }}>
+                  <div style={{ fontSize:"0.8rem", color:"var(--muted)" }}>👥 {count} studying now</div>
+                  <button className="btn btn-primary btn-sm" onClick={() => joinRoom(room)}>Join Room →</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const track = LOFI_TRACKS[trackIdx];
+
+  // Inside room view
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"1.2rem" }}>
+        <button className="btn btn-outline btn-sm" onClick={leaveRoom}>← Leave Room</button>
+        <div>
+          <h2 style={{ fontFamily:"'Clash Display',sans-serif", fontSize:"1.3rem", fontWeight:700 }}>{activeRoom.emoji} {activeRoom.name}</h2>
+          <div style={{ fontSize:"0.8rem", color:"var(--muted)" }}>{activeRoom.vibe}</div>
+        </div>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap:"1.5rem" }}>
+        {/* Left: Timer + Lo-Fi */}
+        <div>
+          <div className="room-inside">
+            {/* Members */}
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"0.5rem", marginBottom:"1.2rem" }}>
+              {members.map(m => (
+                <div key={m.id} className="member-chip">
+                  <div style={{ width:24, height:24, borderRadius:"50%", background:m.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.6rem", fontWeight:700, color:"#fff", overflow:"hidden", flexShrink:0 }}>
+                    {m.photo ? <img src={m.photo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : m.initials}
+                  </div>
+                  {m.name}
+                </div>
+              ))}
+              <div className="member-chip" style={{ color:"#888" }}>+ more online</div>
+            </div>
+
+            {/* Pomodoro */}
+            <div style={{ textAlign:"center", marginBottom:"1rem" }}>
+              <div style={{ fontSize:"0.75rem", textTransform:"uppercase", letterSpacing:"1px", color: pomMode==="focus" ? "var(--accent)" : "#4ade80", marginBottom:"0.3rem", fontWeight:600 }}>
+                {pomMode === "focus" ? "🍅 Focus Time" : "☕ Break Time"}
+              </div>
+              <div className="room-timer-display">{fmt(pomSecs)}</div>
+              {/* Progress bar */}
+              <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:99, height:6, margin:"0.75rem auto", maxWidth:200 }}>
+                <div style={{ background: pomMode==="focus" ? "var(--accent)" : "#4ade80", borderRadius:99, height:"100%", width:`${pomPct}%`, transition:"width 1s linear" }} />
+              </div>
+              <div style={{ display:"flex", gap:"0.5rem", justifyContent:"center", marginTop:"0.5rem" }}>
+                <button onClick={() => setPomRunning(p=>!p)} style={{ background: pomRunning?"#374151":"var(--accent)", border:"none", color:"#fff", borderRadius:10, padding:"0.5rem 1.5rem", fontWeight:700, cursor:"pointer", fontFamily:"'Clash Display',sans-serif" }}>
+                  {pomRunning ? "⏸ Pause" : "▶ Start"}
+                </button>
+                <button onClick={() => { setPomRunning(false); setPomSecs(POM_TIMES[pomMode]); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"#fff", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer" }}>
+                  ↺
+                </button>
+                <button onClick={() => { const n = pomMode==="focus"?"break":"focus"; setPomMode(n); setPomSecs(POM_TIMES[n]); setPomRunning(false); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"#aaa", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer", fontSize:"0.8rem" }}>
+                  {pomMode==="focus" ? "→ Break" : "→ Focus"}
+                </button>
+              </div>
+            </div>
+
+            {/* Lo-Fi Player */}
+            <div className="lofi-player">
+              <div style={{ fontSize:"1.8rem" }}>{track.emoji}</div>
+              <div className="lofi-info">
+                <div className="lofi-title">{track.title}</div>
+                <div className="lofi-sub">{track.sub}</div>
+              </div>
+              <button className="lofi-btn" onClick={() => setTrackIdx(p => (p - 1 + LOFI_TRACKS.length) % LOFI_TRACKS.length)}>⏮</button>
+              <button className="lofi-btn" onClick={() => setPlaying(p => !p)}>{playing ? "⏸" : "▶"}</button>
+              <button className="lofi-btn" onClick={() => setTrackIdx(p => (p + 1) % LOFI_TRACKS.length)}>⏭</button>
+            </div>
+            {playing && (
+              <iframe ref={iframeRef} src={track.url} style={{ display:"none" }} allow="autoplay" />
+            )}
+            <div style={{ marginTop:"0.75rem", display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
+              {LOFI_TRACKS.map((t, i) => (
+                <div key={i} onClick={() => { setTrackIdx(i); setPlaying(true); }}
+                  style={{ cursor:"pointer", padding:"0.3rem 0.75rem", borderRadius:20, fontSize:"0.78rem", background: trackIdx===i ? "var(--accent)" : "rgba(255,255,255,0.08)", color: trackIdx===i ? "#fff" : "#aaa", fontWeight: trackIdx===i ? 600 : 400 }}>
+                  {t.emoji} {t.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Room Chat */}
+        <div style={{ background:"var(--card)", borderRadius:18, border:"1px solid var(--border)", display:"flex", flexDirection:"column", height:480 }}>
+          <div style={{ padding:"1rem 1rem 0.75rem", borderBottom:"1px solid var(--border)", fontWeight:700, fontFamily:"'Clash Display',sans-serif" }}>
+            💬 Room Chat
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"0.75rem 1rem", display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+            {chat.map(m => (
+              <div key={m.id} style={{ textAlign: m.sys ? "center" : m.mine ? "right" : "left" }}>
+                {m.sys ? (
+                  <span style={{ fontSize:"0.78rem", color:"var(--muted)", background:"var(--cream)", borderRadius:20, padding:"0.2rem 0.75rem" }}>{m.text}</span>
+                ) : (
+                  <div>
+                    {!m.mine && <div style={{ fontSize:"0.72rem", color:"var(--muted)", marginBottom:"0.1rem" }}>{m.from}</div>}
+                    <span style={{ background: m.mine ? "var(--accent)" : "var(--cream)", color: m.mine ? "#fff" : "var(--ink)", borderRadius:12, padding:"0.4rem 0.75rem", fontSize:"0.88rem", display:"inline-block", maxWidth:"90%", textAlign:"left" }}>{m.text}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+            <div ref={chatBottomRef} />
+          </div>
+          <div style={{ padding:"0.75rem", borderTop:"1px solid var(--border)", display:"flex", gap:"0.5rem" }}>
+            <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key==="Enter" && sendChat()}
+              placeholder="Say something..." className="chat-input" style={{ flex:1, fontSize:"0.85rem" }} />
+            <button className="chat-send" onClick={sendChat}>Send</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile layout fix */}
+      <style>{`@media(max-width:768px){ .rooms-grid { grid-template-columns: 1fr !important; } }`}</style>
+    </div>
+  );
+}
+
 function MatchPopup({ match, onClose }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(13,13,13,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
@@ -1121,6 +1354,7 @@ export default function App() {
     { id:"discover", label:"🔍 Discover" },
     { id:"friends",  label:"👫 Friends" },
     { id:"messages", label:"💬 Messages" },
+    { id:"rooms",    label:"🎧 Rooms" },
     { id:"tools",    label:"⏱ Study Tools" },
     { id:"rating",   label:"⭐ Rate" },
     { id:"profile",  label:"👤 Profile" },
@@ -1149,6 +1383,7 @@ export default function App() {
           {tab==="discover" && <Discover user={user} onMatch={handleMatch} onToast={showToast}/>}
           {tab==="friends"  && <Friends user={user} onToast={showToast} onMessage={m => { setTab("messages"); }} />}
           {tab==="messages" && <Messages user={user} onToast={showToast}/>}
+          {tab==="rooms"    && <StudyRooms user={user} onToast={showToast}/>}
           {tab==="tools"    && <StudyTools onToast={showToast}/>}
           {tab==="rating"   && <Rating user={user} onToast={showToast}/>}
           {tab==="profile"  && <Profile user={user} setUser={setUser} onToast={showToast}/>}
@@ -1162,6 +1397,7 @@ export default function App() {
           { id:"discover", icon:"🔍", label:"Discover" },
           { id:"friends",  icon:"👫", label:"Friends" },
           { id:"messages", icon:"💬", label:"Messages" },
+          { id:"rooms",    icon:"🎧", label:"Rooms" },
           { id:"tools",    icon:"⏱",  label:"Tools" },
           { id:"rating",   icon:"⭐", label:"Rate" },
           { id:"profile",  icon:"👤", label:"Profile" },
