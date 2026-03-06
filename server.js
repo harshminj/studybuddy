@@ -375,6 +375,11 @@ app.delete("/api/admin/users/:id", auth, async (req, res) => {
 });
 
 // ============================================================
+// ROOM PRESENCE (in-memory, resets on restart)
+// ============================================================
+const roomMembers = {}; // roomId -> { socketId -> { userId, name, initials, photo } }
+
+// ============================================================
 // SOCKET.IO
 // ============================================================
 io.use((socket, next) => {
@@ -384,6 +389,9 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
   socket.join(`user_${socket.user.id}`);
+  let currentRoom = null;
+
+  // ---- Chat messages ----
   socket.on("join_match", (matchId) => socket.join(`match_${matchId}`));
   socket.on("send_message", async ({ matchId, text }) => {
     const msg = await Message.create({ matchId, senderId: socket.user.id, text });
@@ -392,7 +400,75 @@ io.on("connection", (socket) => {
       sender_id: socket.user.id, text, created_at: msg.createdAt
     });
   });
-  socket.on("disconnect", () => console.log(`User ${socket.user.id} disconnected`));
+
+  // ---- Study Rooms ----
+  socket.on("room:join", async ({ roomId, name, initials, photo }) => {
+    // Leave previous room
+    if (currentRoom) {
+      socket.leave(`room_${currentRoom}`);
+      if (roomMembers[currentRoom]) {
+        delete roomMembers[currentRoom][socket.id];
+        io.to(`room_${currentRoom}`).emit("room:members", Object.values(roomMembers[currentRoom]));
+        io.to(`room_${currentRoom}`).emit("room:peer_left", { userId: socket.user.id });
+      }
+    }
+    currentRoom = roomId;
+    socket.join(`room_${roomId}`);
+    if (!roomMembers[roomId]) roomMembers[roomId] = {};
+    roomMembers[roomId][socket.id] = { userId: socket.user.id, socketId: socket.id, name, initials, photo };
+    // Tell existing members about new peer
+    socket.to(`room_${roomId}`).emit("room:peer_joined", { userId: socket.user.id, socketId: socket.id, name, initials, photo });
+    // Send current members list to new joiner
+    socket.emit("room:members", Object.values(roomMembers[roomId]));
+    // Room chat
+    io.to(`room_${roomId}`).emit("room:chat", { sys: true, text: `${name} joined the room 👋` });
+  });
+
+  socket.on("room:leave", () => {
+    if (!currentRoom) return;
+    socket.leave(`room_${currentRoom}`);
+    if (roomMembers[currentRoom]) {
+      const m = roomMembers[currentRoom][socket.id];
+      delete roomMembers[currentRoom][socket.id];
+      io.to(`room_${currentRoom}`).emit("room:members", Object.values(roomMembers[currentRoom]));
+      io.to(`room_${currentRoom}`).emit("room:peer_left", { userId: socket.user.id });
+      if (m) io.to(`room_${currentRoom}`).emit("room:chat", { sys: true, text: `${m.name} left the room` });
+    }
+    currentRoom = null;
+  });
+
+  socket.on("room:chat_msg", ({ roomId, text }) => {
+    io.to(`room_${roomId}`).emit("room:chat", { userId: socket.user.id, name: socket.user.name || "User", text, mine: false });
+  });
+
+  // ---- WebRTC Signaling ----
+  socket.on("rtc:offer", ({ toSocketId, offer }) => {
+    io.to(toSocketId).emit("rtc:offer", { fromSocketId: socket.id, offer });
+  });
+  socket.on("rtc:answer", ({ toSocketId, answer }) => {
+    io.to(toSocketId).emit("rtc:answer", { fromSocketId: socket.id, answer });
+  });
+  socket.on("rtc:ice", ({ toSocketId, candidate }) => {
+    io.to(toSocketId).emit("rtc:ice", { fromSocketId: socket.id, candidate });
+  });
+
+  socket.on("disconnect", () => {
+    if (currentRoom && roomMembers[currentRoom]) {
+      const m = roomMembers[currentRoom][socket.id];
+      delete roomMembers[currentRoom][socket.id];
+      io.to(`room_${currentRoom}`).emit("room:members", Object.values(roomMembers[currentRoom]));
+      io.to(`room_${currentRoom}`).emit("room:peer_left", { userId: socket.user.id });
+      if (m) io.to(`room_${currentRoom}`).emit("room:chat", { sys: true, text: `${m.name} disconnected` });
+    }
+    console.log(`User ${socket.user.id} disconnected`);
+  });
+});
+
+// Room member count API
+app.get("/api/rooms/counts", (req, res) => {
+  const counts = {};
+  Object.keys(roomMembers).forEach(r => { counts[r] = Object.keys(roomMembers[r]).length; });
+  res.json(counts);
 });
 
 // ROOT
