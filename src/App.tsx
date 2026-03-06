@@ -1100,30 +1100,52 @@ const LOFI_TRACKS = [
 ];
 
 const PRESET_ROOMS = [
-  { id:"r1", name:"Lo-Fi Focus Room", emoji:"🎧", bg:"linear-gradient(135deg,#1e1b4b,#312e81)", subject:"General", vibe:"Quiet focus + lo-fi beats" },
-  { id:"r2", name:"Math & Science Hub", emoji:"🔬", bg:"linear-gradient(135deg,#064e3b,#065f46)", subject:"Math/Science", vibe:"Collaborative problem solving" },
-  { id:"r3", name:"Code & Build", emoji:"💻", bg:"linear-gradient(135deg,#1e3a5f,#1e40af)", subject:"CS/Programming", vibe:"Deep work sessions" },
-  { id:"r4", name:"Exam Prep Zone", emoji:"📚", bg:"linear-gradient(135deg,#7c2d12,#9a3412)", subject:"All subjects", vibe:"Intense study mode" },
-  { id:"r5", name:"Chill Study Lounge", emoji:"☕", bg:"linear-gradient(135deg,#422006,#713f12)", subject:"Any", vibe:"Relaxed pace, any topic" },
-  { id:"r6", name:"Night Owl Session", emoji:"🌙", bg:"linear-gradient(135deg,#0f172a,#1e293b)", subject:"Any", vibe:"Late night grinders only" },
+  { id:"r1", name:"Lo-Fi Focus Room",    emoji:"🎧", bg:"linear-gradient(135deg,#1e1b4b,#312e81)", subject:"General",        vibe:"Quiet focus + lo-fi beats" },
+  { id:"r2", name:"Math & Science Hub",  emoji:"🔬", bg:"linear-gradient(135deg,#064e3b,#065f46)", subject:"Math/Science",   vibe:"Collaborative problem solving" },
+  { id:"r3", name:"Code & Build",        emoji:"💻", bg:"linear-gradient(135deg,#1e3a5f,#1e40af)", subject:"CS/Programming", vibe:"Deep work sessions" },
+  { id:"r4", name:"Exam Prep Zone",      emoji:"📚", bg:"linear-gradient(135deg,#7c2d12,#9a3412)", subject:"All subjects",   vibe:"Intense study mode" },
+  { id:"r5", name:"Chill Study Lounge",  emoji:"☕", bg:"linear-gradient(135deg,#422006,#713f12)", subject:"Any",            vibe:"Relaxed pace, any topic" },
+  { id:"r6", name:"Night Owl Session",   emoji:"🌙", bg:"linear-gradient(135deg,#0f172a,#1e293b)", subject:"Any",            vibe:"Late night grinders only" },
+];
+
+const ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
 ];
 
 function StudyRooms({ user, onToast }) {
-  const [activeRoom, setActiveRoom] = useState(null);
-  const [members, setMembers] = useState([]);
-  const [trackIdx, setTrackIdx] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [pomSecs, setPomSecs] = useState(25 * 60);
-  const [pomRunning, setPomRunning] = useState(false);
-  const [pomMode, setPomMode] = useState("focus"); // focus | break
-  const [chat, setChat] = useState([]);
-  const [chatInput, setChatInput] = useState("");
-  const iframeRef = useRef(null);
+  const [activeRoom, setActiveRoom]   = useState(null);
+  const [members, setMembers]         = useState([]);
+  const [roomCounts, setRoomCounts]   = useState({});
+  const [trackIdx, setTrackIdx]       = useState(0);
+  const [playing, setPlaying]         = useState(false);
+  const [pomSecs, setPomSecs]         = useState(25 * 60);
+  const [pomRunning, setPomRunning]   = useState(false);
+  const [pomMode, setPomMode]         = useState("focus");
+  const [chat, setChat]               = useState([]);
+  const [chatInput, setChatInput]     = useState("");
+  const [micOn, setMicOn]             = useState(false);
+  const [micError, setMicError]       = useState("");
+  const [speaking, setSpeaking]       = useState({});
+
+  const socketRef    = useRef(null);
+  const localStream  = useRef(null);
+  const peers        = useRef({});   // socketId -> RTCPeerConnection
   const chatBottomRef = useRef(null);
+  const currentRoomId = useRef(null);
 
-  const POM_TIMES = { focus: 25 * 60, break: 5 * 60 };
+  const POM = { focus: 25 * 60, break: 5 * 60 };
 
-  // Pomodoro timer
+  // Load room member counts
+  useEffect(() => {
+    fetch(`${API}/rooms/counts`).then(r => r.json()).then(setRoomCounts).catch(() => {});
+    const t = setInterval(() => {
+      fetch(`${API}/rooms/counts`).then(r => r.json()).then(setRoomCounts).catch(() => {});
+    }, 10000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Pomodoro
   useEffect(() => {
     if (!pomRunning) return;
     const t = setInterval(() => {
@@ -1131,10 +1153,9 @@ function StudyRooms({ user, onToast }) {
         if (p <= 1) {
           setPomRunning(false);
           const next = pomMode === "focus" ? "break" : "focus";
-          setPomMode(next);
-          setPomSecs(POM_TIMES[next]);
+          setPomMode(next); setPomSecs(POM[next]);
           onToast(pomMode === "focus" ? "🎉 Focus done! Take a break" : "💪 Break over! Back to work", "success");
-          return POM_TIMES[next];
+          return POM[next];
         }
         return p - 1;
       });
@@ -1143,39 +1164,149 @@ function StudyRooms({ user, onToast }) {
   }, [pomRunning, pomMode]);
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-  const pomPct = ((POM_TIMES[pomMode] - pomSecs) / POM_TIMES[pomMode]) * 100;
+  const pomPct = ((POM[pomMode] - pomSecs) / POM[pomMode]) * 100;
 
-  const joinRoom = (room) => {
-    setActiveRoom(room);
-    setPomSecs(25 * 60); setPomMode("focus"); setPomRunning(false);
-    setPlaying(false); setTrackIdx(0);
-    // Simulate other members in room
-    const fakeMembers = [
-      { id: "f1", name: "Alex", initials: "AX", color: "#7c3aed" },
-      { id: "f2", name: "Sam", initials: "SM", color: "#2563eb" },
-      { id: "f3", name: "Mia", initials: "MI", color: "#db2777" },
-    ].slice(0, Math.floor(Math.random() * 3) + 1);
-    setMembers([{ id: user.id, name: user.name, initials: user.initials || getInitials(user.name), color: "#e8500a", photo: user.photo }, ...fakeMembers]);
-    setChat([{ id: 1, from: "System", text: `Welcome to ${room.name}! Stay focused 🎯`, sys: true }]);
+  // Create peer connection for a remote socket
+  const createPeer = (remoteSocketId, isInitiator) => {
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    peers.current[remoteSocketId] = pc;
+
+    // Add local tracks
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(t => pc.addTrack(t, localStream.current));
+    }
+
+    // Remote audio
+    pc.ontrack = (e) => {
+      const audio = document.createElement("audio");
+      audio.srcObject = e.streams[0];
+      audio.autoplay = true;
+      audio.id = `audio_${remoteSocketId}`;
+      document.body.appendChild(audio);
+    };
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socketRef.current?.emit("rtc:ice", { toSocketId: remoteSocketId, candidate: e.candidate });
+      }
+    };
+
+    if (isInitiator) {
+      pc.createOffer().then(offer => {
+        pc.setLocalDescription(offer);
+        socketRef.current?.emit("rtc:offer", { toSocketId: remoteSocketId, offer });
+      });
+    }
+    return pc;
   };
 
-  const leaveRoom = () => { setActiveRoom(null); setPlaying(false); setPomRunning(false); };
+  const removePeer = (socketId) => {
+    if (peers.current[socketId]) {
+      peers.current[socketId].close();
+      delete peers.current[socketId];
+    }
+    const el = document.getElementById(`audio_${socketId}`);
+    if (el) el.remove();
+  };
+
+  const cleanupAudio = () => {
+    Object.keys(peers.current).forEach(removePeer);
+    if (localStream.current) { localStream.current.getTracks().forEach(t => t.stop()); localStream.current = null; }
+    setMicOn(false);
+  };
+
+  // Connect socket when entering room
+  const joinRoom = async (room) => {
+    // Socket connect
+    const { io: socketIo } = await import("https://cdn.socket.io/4.7.2/socket.io.esm.min.js");
+    const sock = socketIo("https://studybuddyy-bfop.onrender.com", { auth: { token: getToken() } });
+    socketRef.current = sock;
+    currentRoomId.current = room.id;
+
+    sock.on("room:members", (mems) => setMembers(mems));
+    sock.on("room:chat", (msg) => {
+      setChat(p => [...p, { id: Date.now() + Math.random(), ...msg }]);
+      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    });
+    sock.on("room:peer_joined", ({ socketId, name, initials, photo }) => {
+      onToast(`${name} joined the room 🎙️`, "success");
+      if (localStream.current) createPeer(socketId, true);
+    });
+    sock.on("room:peer_left", ({ userId }) => {
+      const entry = Object.entries(peers.current).find(([sid]) => sid);
+      if (entry) removePeer(entry[0]);
+    });
+    sock.on("rtc:offer", async ({ fromSocketId, offer }) => {
+      const pc = createPeer(fromSocketId, false);
+      await pc.setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sock.emit("rtc:answer", { toSocketId: fromSocketId, answer });
+    });
+    sock.on("rtc:answer", ({ fromSocketId, answer }) => {
+      peers.current[fromSocketId]?.setRemoteDescription(answer);
+    });
+    sock.on("rtc:ice", ({ fromSocketId, candidate }) => {
+      peers.current[fromSocketId]?.addIceCandidate(candidate);
+    });
+
+    sock.emit("room:join", { roomId: room.id, name: user.name, initials: user.initials || getInitials(user.name), photo: user.photo });
+
+    setActiveRoom(room);
+    setPomSecs(25 * 60); setPomMode("focus"); setPomRunning(false);
+    setPlaying(false); setTrackIdx(0); setMicError("");
+    setChat([{ id: 1, sys: true, text: `Welcome to ${room.name}! 🎯 Stay focused` }]);
+  };
+
+  const leaveRoom = () => {
+    socketRef.current?.emit("room:leave");
+    socketRef.current?.disconnect();
+    socketRef.current = null;
+    cleanupAudio();
+    setActiveRoom(null); setMembers([]); setChat([]);
+    setPomRunning(false); setPlaying(false);
+    currentRoomId.current = null;
+  };
+
+  const toggleMic = async () => {
+    if (micOn) {
+      cleanupAudio();
+      onToast("Microphone off 🔇", "success");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      localStream.current = stream;
+      setMicOn(true);
+      setMicError("");
+      onToast("Microphone on 🎙️ Others can hear you!", "success");
+      // Connect to all existing peers
+      members.filter(m => m.userId !== user.id).forEach(m => {
+        if (m.socketId) createPeer(m.socketId, true);
+      });
+    } catch (e) {
+      setMicError("Microphone access denied. Please allow mic in browser settings.");
+      onToast("Mic access denied ❌", "error");
+    }
+  };
 
   const sendChat = () => {
     if (!chatInput.trim()) return;
-    setChat(p => [...p, { id: Date.now(), from: user.name, text: chatInput.trim(), mine: true }]);
+    const text = chatInput.trim();
+    socketRef.current?.emit("room:chat_msg", { roomId: activeRoom.id, text });
+    setChat(p => [...p, { id: Date.now(), name: user.name, text, mine: true }]);
     setChatInput("");
     setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
 
-  // Room list view
+  // Room list
   if (!activeRoom) return (
     <div>
       <h2 className="page-title">🎧 Study Rooms</h2>
-      <p className="page-sub">Join a virtual room, study together with lo-fi beats</p>
+      <p className="page-sub">Join a virtual room — study together with real audio + lo-fi beats</p>
       <div className="grid-2">
         {PRESET_ROOMS.map(room => {
-          const count = Math.floor(Math.random() * 8) + 1;
+          const count = roomCounts[room.id] || 0;
           return (
             <div key={room.id} className="room-card">
               <div className="room-banner" style={{ background: room.bg }}>{room.emoji}</div>
@@ -1183,8 +1314,10 @@ function StudyRooms({ user, onToast }) {
                 <div className="room-name">{room.name}</div>
                 <div className="room-meta">📖 {room.subject} · ✨ {room.vibe}</div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:"0.5rem" }}>
-                  <div style={{ fontSize:"0.8rem", color:"var(--muted)" }}>👥 {count} studying now</div>
-                  <button className="btn btn-primary btn-sm" onClick={() => joinRoom(room)}>Join Room →</button>
+                  <div style={{ fontSize:"0.8rem", color: count > 0 ? "var(--green)" : "var(--muted)", fontWeight: count > 0 ? 600 : 400 }}>
+                    {count > 0 ? `🟢 ${count} studying now` : "⚪ Empty — be first!"}
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={() => joinRoom(room)}>Join →</button>
                 </div>
               </div>
             </div>
@@ -1196,52 +1329,58 @@ function StudyRooms({ user, onToast }) {
 
   const track = LOFI_TRACKS[trackIdx];
 
-  // Inside room view
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"1.2rem" }}>
-        <button className="btn btn-outline btn-sm" onClick={leaveRoom}>← Leave Room</button>
-        <div>
+        <button className="btn btn-outline btn-sm" onClick={leaveRoom}>← Leave</button>
+        <div style={{ flex:1 }}>
           <h2 style={{ fontFamily:"'Clash Display',sans-serif", fontSize:"1.3rem", fontWeight:700 }}>{activeRoom.emoji} {activeRoom.name}</h2>
           <div style={{ fontSize:"0.8rem", color:"var(--muted)" }}>{activeRoom.vibe}</div>
         </div>
+        {/* Mic button */}
+        <button onClick={toggleMic} style={{ background: micOn ? "#16a34a" : "var(--accent)", border:"none", color:"#fff", borderRadius:12, padding:"0.5rem 1.2rem", fontWeight:700, cursor:"pointer", fontFamily:"'Clash Display',sans-serif", fontSize:"0.9rem", display:"flex", alignItems:"center", gap:"0.4rem" }}>
+          {micOn ? "🎙️ Mic ON" : "🔇 Join Audio"}
+        </button>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 320px", gap:"1.5rem" }}>
-        {/* Left: Timer + Lo-Fi */}
+      {micError && <div style={{ background:"#fee2e2", color:"#dc2626", padding:"0.75rem 1rem", borderRadius:10, marginBottom:"1rem", fontSize:"0.88rem" }}>⚠️ {micError}</div>}
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", gap:"1.5rem" }}>
         <div>
           <div className="room-inside">
             {/* Members */}
-            <div style={{ display:"flex", flexWrap:"wrap", gap:"0.5rem", marginBottom:"1.2rem" }}>
-              {members.map(m => (
-                <div key={m.id} className="member-chip">
-                  <div style={{ width:24, height:24, borderRadius:"50%", background:m.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.6rem", fontWeight:700, color:"#fff", overflow:"hidden", flexShrink:0 }}>
-                    {m.photo ? <img src={m.photo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : m.initials}
+            <div style={{ marginBottom:"1rem" }}>
+              <div style={{ fontSize:"0.72rem", fontWeight:600, color:"#888", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.5rem" }}>
+                👥 {members.length} in room
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:"0.5rem" }}>
+                {members.map((m, i) => (
+                  <div key={i} className="member-chip">
+                    <div style={{ width:26, height:26, borderRadius:"50%", background: COLORS[i % COLORS.length], display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.65rem", fontWeight:700, color:"#fff", overflow:"hidden", flexShrink:0, border: m.userId===user.id && micOn ? "2px solid #4ade80" : "none" }}>
+                      {m.photo ? <img src={m.photo} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (m.initials || "?")}
+                    </div>
+                    <span>{m.name || "User"}</span>
+                    {m.userId === user.id && micOn && <span style={{ color:"#4ade80", fontSize:"0.7rem" }}>🎙️</span>}
                   </div>
-                  {m.name}
-                </div>
-              ))}
-              <div className="member-chip" style={{ color:"#888" }}>+ more online</div>
+                ))}
+              </div>
             </div>
 
             {/* Pomodoro */}
             <div style={{ textAlign:"center", marginBottom:"1rem" }}>
-              <div style={{ fontSize:"0.75rem", textTransform:"uppercase", letterSpacing:"1px", color: pomMode==="focus" ? "var(--accent)" : "#4ade80", marginBottom:"0.3rem", fontWeight:600 }}>
+              <div style={{ fontSize:"0.72rem", textTransform:"uppercase", letterSpacing:"1px", color: pomMode==="focus" ? "var(--accent)" : "#4ade80", marginBottom:"0.3rem", fontWeight:600 }}>
                 {pomMode === "focus" ? "🍅 Focus Time" : "☕ Break Time"}
               </div>
               <div className="room-timer-display">{fmt(pomSecs)}</div>
-              {/* Progress bar */}
               <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:99, height:6, margin:"0.75rem auto", maxWidth:200 }}>
                 <div style={{ background: pomMode==="focus" ? "var(--accent)" : "#4ade80", borderRadius:99, height:"100%", width:`${pomPct}%`, transition:"width 1s linear" }} />
               </div>
-              <div style={{ display:"flex", gap:"0.5rem", justifyContent:"center", marginTop:"0.5rem" }}>
+              <div style={{ display:"flex", gap:"0.5rem", justifyContent:"center" }}>
                 <button onClick={() => setPomRunning(p=>!p)} style={{ background: pomRunning?"#374151":"var(--accent)", border:"none", color:"#fff", borderRadius:10, padding:"0.5rem 1.5rem", fontWeight:700, cursor:"pointer", fontFamily:"'Clash Display',sans-serif" }}>
                   {pomRunning ? "⏸ Pause" : "▶ Start"}
                 </button>
-                <button onClick={() => { setPomRunning(false); setPomSecs(POM_TIMES[pomMode]); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"#fff", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer" }}>
-                  ↺
-                </button>
-                <button onClick={() => { const n = pomMode==="focus"?"break":"focus"; setPomMode(n); setPomSecs(POM_TIMES[n]); setPomRunning(false); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"#aaa", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer", fontSize:"0.8rem" }}>
+                <button onClick={() => { setPomRunning(false); setPomSecs(POM[pomMode]); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"#fff", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer" }}>↺</button>
+                <button onClick={() => { const n = pomMode==="focus"?"break":"focus"; setPomMode(n); setPomSecs(POM[n]); setPomRunning(false); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"#aaa", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer", fontSize:"0.8rem" }}>
                   {pomMode==="focus" ? "→ Break" : "→ Focus"}
                 </button>
               </div>
@@ -1254,17 +1393,15 @@ function StudyRooms({ user, onToast }) {
                 <div className="lofi-title">{track.title}</div>
                 <div className="lofi-sub">{track.sub}</div>
               </div>
-              <button className="lofi-btn" onClick={() => setTrackIdx(p => (p - 1 + LOFI_TRACKS.length) % LOFI_TRACKS.length)}>⏮</button>
-              <button className="lofi-btn" onClick={() => setPlaying(p => !p)}>{playing ? "⏸" : "▶"}</button>
-              <button className="lofi-btn" onClick={() => setTrackIdx(p => (p + 1) % LOFI_TRACKS.length)}>⏭</button>
+              <button className="lofi-btn" onClick={() => setTrackIdx(p => (p-1+LOFI_TRACKS.length)%LOFI_TRACKS.length)}>⏮</button>
+              <button className="lofi-btn" onClick={() => setPlaying(p=>!p)}>{playing ? "⏸" : "▶"}</button>
+              <button className="lofi-btn" onClick={() => setTrackIdx(p => (p+1)%LOFI_TRACKS.length)}>⏭</button>
             </div>
-            {playing && (
-              <iframe ref={iframeRef} src={track.url} style={{ display:"none" }} allow="autoplay" />
-            )}
-            <div style={{ marginTop:"0.75rem", display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
-              {LOFI_TRACKS.map((t, i) => (
+            {playing && <iframe src={track.url} style={{ display:"none" }} allow="autoplay" />}
+            <div style={{ marginTop:"0.75rem", display:"flex", gap:"0.4rem", flexWrap:"wrap" }}>
+              {LOFI_TRACKS.map((t,i) => (
                 <div key={i} onClick={() => { setTrackIdx(i); setPlaying(true); }}
-                  style={{ cursor:"pointer", padding:"0.3rem 0.75rem", borderRadius:20, fontSize:"0.78rem", background: trackIdx===i ? "var(--accent)" : "rgba(255,255,255,0.08)", color: trackIdx===i ? "#fff" : "#aaa", fontWeight: trackIdx===i ? 600 : 400 }}>
+                  style={{ cursor:"pointer", padding:"0.25rem 0.7rem", borderRadius:20, fontSize:"0.75rem", background: trackIdx===i?"var(--accent)":"rgba(255,255,255,0.08)", color: trackIdx===i?"#fff":"#aaa", fontWeight: trackIdx===i?600:400 }}>
                   {t.emoji} {t.title}
                 </div>
               ))}
@@ -1272,37 +1409,33 @@ function StudyRooms({ user, onToast }) {
           </div>
         </div>
 
-        {/* Right: Room Chat */}
-        <div style={{ background:"var(--card)", borderRadius:18, border:"1px solid var(--border)", display:"flex", flexDirection:"column", height:480 }}>
-          <div style={{ padding:"1rem 1rem 0.75rem", borderBottom:"1px solid var(--border)", fontWeight:700, fontFamily:"'Clash Display',sans-serif" }}>
+        {/* Room Chat */}
+        <div style={{ background:"var(--card)", borderRadius:18, border:"1px solid var(--border)", display:"flex", flexDirection:"column", height:520 }}>
+          <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)", fontWeight:700, fontFamily:"'Clash Display',sans-serif", fontSize:"0.95rem" }}>
             💬 Room Chat
           </div>
-          <div style={{ flex:1, overflowY:"auto", padding:"0.75rem 1rem", display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+          <div style={{ flex:1, overflowY:"auto", padding:"0.75rem 1rem", display:"flex", flexDirection:"column", gap:"0.4rem" }}>
             {chat.map(m => (
               <div key={m.id} style={{ textAlign: m.sys ? "center" : m.mine ? "right" : "left" }}>
                 {m.sys ? (
-                  <span style={{ fontSize:"0.78rem", color:"var(--muted)", background:"var(--cream)", borderRadius:20, padding:"0.2rem 0.75rem" }}>{m.text}</span>
+                  <span style={{ fontSize:"0.75rem", color:"var(--muted)", background:"var(--cream)", borderRadius:20, padding:"0.2rem 0.75rem" }}>{m.text}</span>
                 ) : (
                   <div>
-                    {!m.mine && <div style={{ fontSize:"0.72rem", color:"var(--muted)", marginBottom:"0.1rem" }}>{m.from}</div>}
-                    <span style={{ background: m.mine ? "var(--accent)" : "var(--cream)", color: m.mine ? "#fff" : "var(--ink)", borderRadius:12, padding:"0.4rem 0.75rem", fontSize:"0.88rem", display:"inline-block", maxWidth:"90%", textAlign:"left" }}>{m.text}</span>
+                    {!m.mine && <div style={{ fontSize:"0.7rem", color:"var(--muted)", marginBottom:"0.1rem" }}>{m.name}</div>}
+                    <span style={{ background: m.mine?"var(--accent)":"var(--cream)", color: m.mine?"#fff":"var(--ink)", borderRadius:12, padding:"0.35rem 0.7rem", fontSize:"0.85rem", display:"inline-block", maxWidth:"90%", textAlign:"left" }}>{m.text}</span>
                   </div>
                 )}
               </div>
             ))}
             <div ref={chatBottomRef} />
           </div>
-          <div style={{ padding:"0.75rem", borderTop:"1px solid var(--border)", display:"flex", gap:"0.5rem" }}>
-            <input value={chatInput} onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => e.key==="Enter" && sendChat()}
-              placeholder="Say something..." className="chat-input" style={{ flex:1, fontSize:"0.85rem" }} />
+          <div style={{ padding:"0.6rem", borderTop:"1px solid var(--border)", display:"flex", gap:"0.4rem" }}>
+            <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key==="Enter" && sendChat()}
+              placeholder="Chat..." className="chat-input" style={{ flex:1, fontSize:"0.83rem" }} />
             <button className="chat-send" onClick={sendChat}>Send</button>
           </div>
         </div>
       </div>
-
-      {/* Mobile layout fix */}
-      <style>{`@media(max-width:768px){ .rooms-grid { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 }
