@@ -280,6 +280,10 @@ app.get("/api/matches", auth, async (req, res) => {
       name: other?.name,
       college: other?.college,
       initials: other?.initials,
+      photo: other?.photo,
+      style: other?.style,
+      subjects: other?.subjects || [],
+      location: other?.location,
       last_message: lastMsg?.text,
       unread_count: 0,
     };
