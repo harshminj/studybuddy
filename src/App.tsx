@@ -597,9 +597,23 @@ function Profile({ user, setUser, onToast }) {
   const handlePhoto = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { onToast("Image too large! Max 2MB", "error"); return; }
+    if (file.size > 10 * 1024 * 1024) { onToast("Image too large! Max 10MB", "error"); return; }
     const reader = new FileReader();
-    reader.onload = (ev) => setPhoto(ev.target.result);
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX = 400;
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+        else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL("image/jpeg", 0.7);
+        setPhoto(compressed);
+      };
+      img.src = ev.target.result as string;
+    };
     reader.readAsDataURL(file);
   };
 
