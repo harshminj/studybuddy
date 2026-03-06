@@ -56,7 +56,12 @@ const style = `
   .nav-tab:hover { color: var(--paper); background: rgba(255,255,255,0.08); }
   .nav-tab.active { background: var(--accent); color: #fff; }
   .nav-user { display: flex; align-items: center; gap: 0.75rem; }
-  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .profile-card-avatar img, .match-avatar img, .profile-hero-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .pic-upload-wrap { position: relative; display: inline-block; cursor: pointer; }
+  .pic-upload-wrap:hover .pic-overlay { opacity: 1; }
+  .pic-overlay { position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: 600; opacity: 0; transition: opacity 0.2s; text-align: center; }
   .logout-btn { background: rgba(255,255,255,0.1); border: none; color: #bbb; padding: 0.35rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
   .logout-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
   .auth-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; min-height: 100vh; background: linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #0d0d0d 100%); }
@@ -437,7 +442,7 @@ function Discover({ user, onMatch, onToast }) {
               <div className="profile-card" key={u.id}>
                 <div className="profile-card-banner" style={{ background:`linear-gradient(135deg, ${userColor(u.id)} 0%, #1e293b 100%)` }} />
                 <div style={{ padding:"0 1rem" }}>
-                  <div className="profile-card-avatar" style={{ background:userColor(u.id) }}>{u.initials || getInitials(u.name)}</div>
+                  <div className="profile-card-avatar" style={{ background:userColor(u.id) }}>{u.photo ? <img src={u.photo} alt={u.name} /> : (u.initials || getInitials(u.name))}</div>
                 </div>
                 <div className="profile-card-body">
                   <div className="profile-card-name">{u.name}</div>
@@ -529,7 +534,7 @@ function Messages({ user, onToast }) {
           )}
           {matches.map(m => (
             <div key={m.match_id} className={`match-row ${active?.match_id === m.match_id ? "active" : ""}`} onClick={() => setActive(m)}>
-              <div className="match-avatar" style={{ background:userColor(m.id) }}>{m.initials || getInitials(m.name)}</div>
+              <div className="match-avatar" style={{ background:userColor(m.id) }}>{m.photo ? <img src={m.photo} alt={m.name} /> : (m.initials || getInitials(m.name))}</div>
               <div className="match-info">
                 <div className="match-name">{m.name}</div>
                 <div className="match-preview">{m.last_message || "Say hi! 👋"}</div>
@@ -584,21 +589,41 @@ function Profile({ user, setUser, onToast }) {
   const [subjects, setSubjects] = useState(user.subjects || []);
   const [studyStyle, setStudyStyle] = useState(user.style || "");
   const [loading, setLoading] = useState(false);
+  const [photo, setPhoto] = useState(user.photo || null);
+  const fileRef = useRef(null);
+
   const toggleSubject = (s) => setSubjects(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const handlePhoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { onToast("Image too large! Max 2MB", "error"); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhoto(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
   const save = async () => {
     setLoading(true);
     try {
-      await apiFetch("/profile/me", { method: "PUT", body: { name, college, subjects, style: studyStyle, location } });
-      const updated = { ...user, name, college, subjects, style: studyStyle, location, initials: getInitials(name) };
+      await apiFetch("/profile/me", { method: "PUT", body: { name, college, subjects, style: studyStyle, location, photo } });
+      const updated = { ...user, name, college, subjects, style: studyStyle, location, initials: getInitials(name), photo };
       setUser(updated); setStoredUser(updated);
       onToast("Profile saved!", "success");
     } catch (e) { onToast(e.message, "error"); }
     setLoading(false);
   };
+
   return (
     <div>
       <div className="profile-hero">
-        <div className="profile-hero-avatar" style={{ background:userColor(user.id) }}>{user.initials || getInitials(user.name)}</div>
+        <div className="pic-upload-wrap" onClick={() => fileRef.current?.click()}>
+          <div className="profile-hero-avatar" style={{ background:userColor(user.id) }}>
+            {photo ? <img src={photo} alt="avatar" /> : (user.initials || getInitials(user.name))}
+          </div>
+          <div className="pic-overlay">📷<br/>Change</div>
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhoto} />
         <div className="profile-hero-info">
           <h2>{user.name}</h2>
           <p>{user.college} · {user.style}</p>
@@ -608,6 +633,18 @@ function Profile({ user, setUser, onToast }) {
       <div style={{ maxWidth:600 }}>
         <div className="card">
           <h3 style={{ marginBottom:"1.2rem" }}>Edit Profile</h3>
+          <div className="form-group" style={{ textAlign:"center", marginBottom:"1.5rem" }}>
+            <label>Profile Picture</label>
+            <div style={{ display:"flex", justifyContent:"center", marginTop:"0.5rem" }}>
+              <div className="pic-upload-wrap" onClick={() => fileRef.current?.click()}>
+                <div style={{ width:90, height:90, borderRadius:"50%", background:userColor(user.id), display:"flex", alignItems:"center", justifyContent:"center", fontSize:"2rem", fontWeight:700, color:"#fff", overflow:"hidden", border:"3px solid var(--accent)" }}>
+                  {photo ? <img src={photo} alt="avatar" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.initials || getInitials(user.name))}
+                </div>
+                <div className="pic-overlay">📷<br/>Upload</div>
+              </div>
+            </div>
+            <p style={{ fontSize:"0.75rem", color:"var(--muted)", marginTop:"0.4rem" }}>Max 2MB · JPG, PNG</p>
+          </div>
           <div className="form-group"><label>Full Name</label><input value={name} onChange={e => setName(e.target.value)} /></div>
           <div className="form-group"><label>College</label><input value={college} onChange={e => setCollege(e.target.value)} /></div>
           <div className="form-group"><label>Location</label><input value={location} onChange={e => setLocation(e.target.value)} /></div>
@@ -893,7 +930,7 @@ export default function App() {
           </div>
           <div className="nav-user">
             <div className="avatar" style={{ background:userColor(user?.id) }} onClick={()=>setTab("profile")}>
-              {user?.initials||getInitials(user?.name)}
+              {user?.photo ? <img src={user.photo} alt="me" /> : (user?.initials||getInitials(user?.name))}
             </div>
             <button className="logout-btn" onClick={logout}>Logout</button>
           </div>
