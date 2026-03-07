@@ -38,214 +38,541 @@ async function apiFetch(path, options = {}) {
 }
 
 const style = `
-  @import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
   :root {
-    --ink: #0d0d0d; --paper: #f5f0e8; --cream: #ede8dc;
-    --accent: #e8500a; --accent2: #2563eb; --muted: #8a8070;
-    --card: #ffffff; --border: #d4cfc5; --green: #16a34a; --red: #dc2626;
-    --shadow: 0 2px 16px rgba(13,13,13,0.10); --shadow-lg: 0 8px 40px rgba(13,13,13,0.18);
+    /* Core palette */
+    --ink:      #05050a;
+    --base:     #0c0c14;
+    --lift:     #111120;
+    --panel:    #161628;
+    --rim:      #1e1e36;
+    --line:     rgba(255,255,255,0.06);
+    --line2:    rgba(255,255,255,0.11);
+    --line3:    rgba(255,255,255,0.18);
+
+    /* Text */
+    --t1: #eeeeff;
+    --t2: #8b8baa;
+    --t3: #4a4a6a;
+    --t4: #2e2e4e;
+
+    /* Brand */
+    --p:   #7c6cff;
+    --p2:  #b8acff;
+    --pg:  linear-gradient(135deg, #7c6cff 0%, #b060ff 100%);
+    --pgv: linear-gradient(180deg, #7c6cff 0%, #b060ff 100%);
+    --glow: rgba(124,108,255,0.3);
+    --glow2: rgba(176,96,255,0.25);
+
+    /* Status */
+    --ok:    #4ade80;
+    --warn:  #fbbf24;
+    --err:   #f87171;
+    --info:  #60a5fa;
+
+    /* Spacing / shape */
+    --r-sm: 8px;
+    --r:    14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --sh:   0 2px 8px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.35);
+    --sh-lg: 0 4px 12px rgba(0,0,0,0.6), 0 24px 64px rgba(0,0,0,0.5);
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
-  h1,h2,h3,h4,h5 { font-family: 'Clash Display', sans-serif; }
-  .app { min-height: 100vh; display: flex; flex-direction: column; }
-  .nav { background: var(--ink); color: var(--paper); padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .nav-logo { font-family: 'Clash Display', sans-serif; font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
-  .nav-logo span { color: var(--accent); }
-  .nav-tabs { display: flex; gap: 0.25rem; }
-  .nav-tab { padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #bbb; border: none; background: transparent; transition: all 0.15s; }
-  .nav-tab:hover { color: var(--paper); background: rgba(255,255,255,0.08); }
-  .nav-tab.active { background: var(--accent); color: #fff; }
-  .nav-user { display: flex; align-items: center; gap: 0.75rem; }
-  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; overflow: hidden; }
-  .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-  .profile-card-avatar img, .match-avatar img, .profile-hero-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-  .pic-upload-wrap { position: relative; display: inline-block; cursor: pointer; }
-  .pic-upload-wrap:hover .pic-overlay { opacity: 1; }
-  .pic-overlay { position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: 600; opacity: 0; transition: opacity 0.2s; text-align: center; }
-  .logout-btn { background: rgba(255,255,255,0.1); border: none; color: #bbb; padding: 0.35rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
-  .logout-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
-  .auth-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; min-height: 100vh; background: linear-gradient(135deg, #0d0d0d 0%, #1a1a2e 50%, #0d0d0d 100%); }
-  .auth-card { background: var(--card); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: var(--shadow-lg); }
-  .auth-logo { text-align: center; margin-bottom: 1.5rem; }
-  .auth-logo h1 { font-size: 2rem; }
-  .auth-logo h1 span { color: var(--accent); }
-  .auth-logo p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
-  .auth-tabs { display: flex; background: var(--cream); border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; }
-  .auth-tab { flex: 1; padding: 0.5rem; text-align: center; border-radius: 7px; cursor: pointer; font-weight: 500; font-size: 0.9rem; transition: all 0.15s; }
-  .auth-tab.active { background: var(--ink); color: #fff; }
-  .form-group { margin-bottom: 1rem; }
-  .form-group label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--muted); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.5px; }
-  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; background: var(--cream); color: var(--ink); transition: border 0.15s; outline: none; }
-  .form-group input:focus, .form-group select:focus { border-color: var(--accent2); background: #fff; }
-  .btn { width: 100%; padding: 0.8rem; border-radius: 10px; border: none; font-family: 'Clash Display', sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px; }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover:not(:disabled) { background: #c43f08; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(232,80,10,0.3); }
-  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--ink); }
-  .btn-sm { width: auto; padding: 0.45rem 1rem; font-size: 0.85rem; }
-  .auth-switch { text-align: center; margin-top: 1rem; font-size: 0.88rem; color: var(--muted); }
-  .auth-switch a { color: var(--accent); cursor: pointer; font-weight: 500; }
-  .step-indicator { display: flex; gap: 0.4rem; justify-content: center; margin-bottom: 1.5rem; }
-  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
-  .step-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
-  .err-msg { background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2); color: var(--red); border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.85rem; margin-bottom: 1rem; }
-  .main { flex: 1; padding: 1.5rem 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
-  .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.3rem; }
-  .page-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-  .card { background: var(--card); border-radius: 16px; padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); }
-  .loading { display: flex; align-items: center; justify-content: center; padding: 3rem; color: var(--muted); gap: 0.5rem; font-size: 0.9rem; }
-  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink:0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .discover-wrapper { display: flex; gap: 1.5rem; }
-  .discover-filters { width: 240px; flex-shrink: 0; }
-  .discover-cards { flex: 1; }
-  .filter-section { margin-bottom: 1.2rem; }
-  .filter-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; color: var(--muted); margin-bottom: 0.6rem; }
-  .filter-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.8rem; border-radius: 20px; border: 1.5px solid var(--border); font-size: 0.82rem; cursor: pointer; margin: 0.2rem; transition: all 0.15s; background: var(--cream); }
-  .filter-chip.active { border-color: var(--accent); background: rgba(232,80,10,0.08); color: var(--accent); font-weight: 600; }
-  .profile-card { background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; }
-  .profile-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(13,13,13,0.15); }
-  .profile-card-banner { height: 100px; }
-  .profile-card-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; border: 3px solid var(--card); margin-top: -28px; flex-shrink: 0; }
-  .profile-card-body { padding: 0.3rem 1rem 1rem; }
-  .profile-card-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.1rem; }
-  .profile-card-college { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.6rem; }
-  .tag { display: inline-flex; align-items: center; padding: 0.2rem 0.65rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin: 0.15rem; }
-  .tag-style { background: rgba(37,99,235,0.1); color: var(--accent2); }
-  .tag-subject { background: rgba(22,163,74,0.1); color: var(--green); }
-  .card-actions { display: flex; gap: 0.6rem; margin-top: 0.8rem; }
-  .btn-like { flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 0.55rem; font-weight: 700; cursor: pointer; transition: all 0.15s; font-size: 0.9rem; }
-  .btn-like:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-pass { flex: 1; background: var(--cream); color: var(--muted); border: 1.5px solid var(--border); border-radius: 10px; padding: 0.55rem; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
-  .match-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 14px; cursor: pointer; transition: background 0.15s; border: 1px solid var(--border); margin-bottom: 0.6rem; background: var(--card); }
-  .match-row:hover { background: var(--cream); }
-  .match-row.active { background: rgba(37,99,235,0.07); border-color: var(--accent2); }
-  .match-avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: #fff; flex-shrink: 0; }
-  .match-info { flex: 1; min-width: 0; }
-  .match-name { font-weight: 600; font-size: 0.95rem; }
-  .match-preview { font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-  .chat-layout { display: flex; height: calc(100vh - 130px); gap: 1rem; }
-  .chat-sidebar { width: 300px; flex-shrink: 0; overflow-y: auto; }
-  .chat-main { flex: 1; display: flex; flex-direction: column; background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
-  .chat-header { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.8rem; }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
-  .msg { max-width: 70%; }
-  .msg.me { align-self: flex-end; }
-  .msg.them { align-self: flex-start; }
-  .msg-bubble { padding: 0.6rem 0.9rem; border-radius: 14px; font-size: 0.9rem; line-height: 1.45; }
-  .msg.me .msg-bubble { background: var(--accent2); color: #fff; border-bottom-right-radius: 4px; }
-  .msg.them .msg-bubble { background: var(--cream); color: var(--ink); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
-  .msg-time { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; text-align: right; }
-  .chat-input-row { padding: 0.8rem 1rem; border-top: 1px solid var(--border); display: flex; gap: 0.6rem; }
-  .chat-input { flex: 1; border: 1.5px solid var(--border); border-radius: 10px; padding: 0.6rem 0.9rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; background: var(--cream); outline: none; }
-  .chat-input:focus { border-color: var(--accent2); background: #fff; }
-  .chat-send { background: var(--accent2); color: #fff; border: none; border-radius: 10px; padding: 0.6rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
-  .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 0.5rem; }
-  .profile-hero { background: var(--ink); color: var(--paper); border-radius: 20px; padding: 2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
-  .profile-hero-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 2rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-  .profile-hero-info h2 { font-size: 1.5rem; margin-bottom: 0.2rem; }
-  .profile-hero-info p { color: #aaa; font-size: 0.9rem; }
-  .style-options { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.4rem; }
-  .style-opt { padding: 0.45rem 1rem; border-radius: 20px; border: 1.5px solid var(--border); cursor: pointer; font-size: 0.85rem; transition: all 0.15s; background: var(--cream); }
-  .style-opt.selected { background: var(--accent2); border-color: var(--accent2); color: #fff; font-weight: 600; }
-  .timer-circle { width: 200px; height: 200px; border-radius: 50%; margin: 1.5rem auto; background: conic-gradient(var(--accent) calc(var(--prog, 100) * 1%), var(--cream) 0); display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 2.8rem; font-weight: 700; box-shadow: 0 0 0 12px var(--cream), 0 0 0 14px var(--border); }
-  .timer-controls { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1rem; }
-  .timer-btn { padding: 0.55rem 1.4rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; font-family: 'Clash Display', sans-serif; font-size: 0.95rem; }
-  .goals-list { list-style: none; }
-  .goals-list li { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-  .goals-list li.done { text-decoration: line-through; color: var(--muted); }
-  .goals-list li input[type=checkbox] { accent-color: var(--accent2); width: 16px; height: 16px; cursor: pointer; }
-  .goal-input-row { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
-  .goal-input { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 0.5rem 0.8rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; background: var(--cream); }
-  .star { font-size: 1.6rem; cursor: pointer; transition: transform 0.1s; }
-  .star:hover { transform: scale(1.2); }
-  .rating-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
-  .stat-card { background: var(--card); border-radius: 14px; padding: 1.2rem 1.5rem; border: 1px solid var(--border); }
-  .stat-num { font-family: 'Clash Display', sans-serif; font-size: 2rem; font-weight: 700; }
-  .stat-label { color: var(--muted); font-size: 0.85rem; margin-top: 0.1rem; }
-  .table { width: 100%; border-collapse: collapse; }
-  .table th { text-align: left; padding: 0.6rem 1rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 2px solid var(--border); }
-  .table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--cream); font-size: 0.9rem; }
-  .table tr:hover td { background: var(--cream); }
-  .badge { display: inline-flex; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-  .badge-active { background: rgba(22,163,74,0.1); color: var(--green); }
-  .badge-admin  { background: rgba(232,80,10,0.1); color: var(--accent); }
-  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; background: var(--ink); color: var(--paper); padding: 0.75rem 1.25rem; border-radius: 12px; font-size: 0.9rem; font-weight: 500; box-shadow: var(--shadow-lg); animation: slideup 0.3s ease; max-width: 320px; }
-  .toast.success { border-left: 4px solid var(--green); }
-  .toast.match   { border-left: 4px solid var(--accent); }
-  .toast.error   { border-left: 4px solid var(--red); }
-  @keyframes slideup { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  .otp-input { width: 100%; text-align: center; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.8rem; padding: 0.9rem 1rem; border: 2.5px solid var(--accent); border-radius: 14px; background: var(--cream); outline: none; font-family: 'Clash Display', sans-serif; }
-  .room-card { background: var(--card); border-radius: 18px; border: 1px solid var(--border); overflow: hidden; transition: transform 0.15s, box-shadow 0.15s; }
-  .room-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-  .room-banner { height: 80px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
-  .room-body { padding: 1rem 1.2rem 1.2rem; }
-  .room-name { font-family: 'Clash Display', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.2rem; }
-  .room-meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
-  .room-members { display: flex; gap: -6px; margin-bottom: 0.75rem; }
-  .room-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: #fff; margin-right: -6px; overflow: hidden; }
-  .room-inside { background: var(--ink); color: var(--paper); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; }
-  .room-timer-display { font-family: 'Clash Display', sans-serif; font-size: 4rem; font-weight: 700; text-align: center; letter-spacing: -2px; }
-  .room-phase { text-align: center; font-size: 0.9rem; color: #aaa; margin-bottom: 1rem; }
-  .lofi-player { background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1rem; margin-top: 1rem; display: flex; align-items: center; gap: 1rem; }
-  .lofi-info { flex: 1; }
-  .lofi-title { font-weight: 600; font-size: 0.9rem; }
-  .lofi-sub { font-size: 0.75rem; color: #888; }
-  .lofi-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .member-chip { display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.08); border-radius: 20px; padding: 0.3rem 0.75rem 0.3rem 0.3rem; font-size: 0.8rem; }
-  .private-room { position: fixed; inset: 0; background: rgba(13,13,13,0.92); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-  .private-room-box { background: #0d0d0d; border-radius: 24px; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
-  .private-room-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 1rem; }
-  .private-room-chat { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; min-height: 200px; max-height: 300px; }
-  .private-room-input { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 0.5rem; }
-  .ai-wrap { display: flex; flex-direction: column; height: calc(100vh - 120px); max-width: 800px; margin: 0 auto; }
-  .ai-header { padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 0; }
-  .ai-messages { flex: 1; overflow-y: auto; padding: 1rem 0; display: flex; flex-direction: column; gap: 1rem; }
-  .ai-bubble-wrap { display: flex; gap: 0.7rem; align-items: flex-start; }
-  .ai-bubble-wrap.user { flex-direction: row-reverse; }
-  .ai-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; font-weight: 700; }
-  .ai-bubble { max-width: 75%; padding: 0.75rem 1rem; border-radius: 16px; font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
-  .ai-bubble.assistant { background: var(--card); border: 1px solid var(--border); border-top-left-radius: 4px; }
-  .ai-bubble.user { background: var(--accent); color: #fff; border-top-right-radius: 4px; }
-  .ai-bubble code { background: rgba(0,0,0,0.07); padding: 0.1rem 0.35rem; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
-  .ai-bubble pre { background: #1e293b; color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 10px; overflow-x: auto; margin: 0.5rem 0; font-size: 0.82rem; }
-  .ai-bubble pre code { background: none; padding: 0; color: inherit; }
-  .ai-bubble strong { font-weight: 700; }
-  .ai-input-row { display: flex; gap: 0.6rem; padding-top: 0.8rem; border-top: 1px solid var(--border); }
-  .ai-input { flex: 1; border: 1.5px solid var(--border); border-radius: 12px; padding: 0.75rem 1rem; font-family: "DM Sans",sans-serif; font-size: 0.92rem; outline: none; background: var(--cream); resize: none; line-height: 1.4; max-height: 120px; transition: border 0.15s; }
-  .ai-input:focus { border-color: var(--accent); }
-  .ai-send { background: var(--accent); border: none; color: #fff; border-radius: 12px; padding: 0.75rem 1.2rem; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; transition: opacity 0.15s; }
-  .ai-send:disabled { opacity: 0.5; cursor: not-allowed; }
-  .ai-typing { display: flex; gap: 4px; align-items: center; padding: 0.6rem 0.8rem; }
-  .ai-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite; }
-  .ai-dot:nth-child(2) { animation-delay: 0.2s; }
-  .ai-dot:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
-  .ai-suggestion { display: inline-flex; background: var(--cream); border: 1px solid var(--border); border-radius: 20px; padding: 0.4rem 0.9rem; font-size: 0.82rem; cursor: pointer; transition: background 0.15s, border 0.15s; white-space: nowrap; }
-  .ai-suggestion:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .mobile-nav { display: none; }
-  @media (max-width: 768px) {
-    .discover-wrapper { flex-direction: column; }
-    .discover-filters { width: 100%; }
-    .chat-layout { flex-direction: column; height: auto; }
-    .chat-sidebar { width: 100%; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .main { padding: 1rem; padding-bottom: 80px; }
-    .nav-tabs { display: none; }
-    .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: var(--ink); z-index: 200; border-top: 1px solid rgba(255,255,255,0.1); padding: 0.4rem 0 0.6rem; }
-    .mobile-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; color: #888; cursor: pointer; padding: 0.3rem 0; font-size: 0.6rem; font-family: 'DM Sans', sans-serif; transition: color 0.15s; }
-    .mobile-nav-btn.active { color: var(--accent); }
-    .mobile-nav-btn span:first-child { font-size: 1.2rem; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--ink);
+    color: var(--t1);
+    min-height: 100vh;
+    line-height: 1.5;
+    /* Subtle noise texture for depth */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E");
+  }
+
+  h1,h2,h3,h4,h5 { font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.02em; line-height:1.15; }
+
+  /* ─── SCROLLBARS ─────────────────────────────────────────── */
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--rim); border-radius:99px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--t3); }
+
+  /* ─── APP SHELL ──────────────────────────────────────────── */
+  .app { min-height:100vh; display:flex; flex-direction:column; }
+
+  /* ─── NAV ────────────────────────────────────────────────── */
+  .nav {
+    height:60px;
+    padding:0 1.5rem;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:200;
+    background:rgba(5,5,10,0.75);
+    backdrop-filter:blur(24px) saturate(180%);
+    -webkit-backdrop-filter:blur(24px) saturate(180%);
+    border-bottom:1px solid var(--line2);
+  }
+  .nav::after {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(90deg, rgba(124,108,255,0.04) 0%, transparent 40%, rgba(176,96,255,0.04) 100%);
+  }
+
+  .nav-logo {
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-size:1.25rem; font-weight:800;
+    letter-spacing:-0.04em;
+    display:flex; align-items:center; gap:0.55rem;
+    text-decoration:none; color:var(--t1);
+    flex-shrink:0;
+  }
+  .nav-logo-icon {
+    width:30px; height:30px; border-radius:9px;
+    background:var(--pg);
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.85rem;
+    box-shadow:0 0 14px var(--glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .nav-logo span { background:var(--pg); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+  .nav-tabs {
+    display:flex; gap:2px;
+    background:var(--lift);
+    border:1px solid var(--line2);
+    border-radius:var(--r);
+    padding:3px;
+  }
+  .nav-tab {
+    padding:0.32rem 0.8rem; border-radius:10px;
+    cursor:pointer; font-size:0.75rem; font-weight:600;
+    color:var(--t3); border:none; background:transparent;
+    transition:all 0.18s cubic-bezier(0.4,0,0.2,1);
+    white-space:nowrap; font-family:'Instrument Sans',sans-serif;
+    letter-spacing:0.01em;
+  }
+  .nav-tab:hover { color:var(--t2); background:var(--panel); }
+  .nav-tab.active {
+    background:var(--pg);
+    color:#fff;
+    box-shadow:0 0 12px var(--glow), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+
+  .nav-user { display:flex; align-items:center; gap:0.65rem; }
+  .avatar {
+    width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:0.75rem; color:#fff;
+    cursor:pointer; overflow:hidden; flex-shrink:0;
+    border:1.5px solid var(--line3); transition:border-color 0.2s;
+    background:var(--pg);
+  }
+  .avatar:hover { border-color:var(--p2); }
+  .avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .profile-card-avatar img,.match-avatar img,.profile-hero-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .pic-upload-wrap { position:relative; display:inline-block; cursor:pointer; }
+  .pic-upload-wrap:hover .pic-overlay { opacity:1; }
+  .pic-overlay { position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.6rem; font-weight:700; opacity:0; transition:opacity 0.2s; text-align:center; }
+  .logout-btn {
+    background:var(--lift); border:1px solid var(--line2);
+    color:var(--t2); padding:0.32rem 0.8rem;
+    border-radius:var(--r-sm); cursor:pointer;
+    font-size:0.73rem; font-weight:600;
+    font-family:'Instrument Sans',sans-serif;
+    transition:all 0.15s;
+  }
+  .logout-btn:hover { background:var(--panel); color:var(--t1); border-color:var(--line3); }
+
+  /* ─── AUTH ───────────────────────────────────────────────── */
+  .auth-wrapper {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    padding:2rem; min-height:100vh;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 55%, rgba(124,108,255,0.14) 0%, transparent 100%),
+      radial-gradient(ellipse 50% 40% at 85% 25%, rgba(176,96,255,0.10) 0%, transparent 100%),
+      radial-gradient(ellipse 40% 60% at 50% 100%, rgba(60,30,120,0.12) 0%, transparent 100%),
+      var(--ink);
+  }
+  .auth-card {
+    background:var(--lift);
+    border:1px solid var(--line2);
+    border-radius:var(--r-xl);
+    padding:2.5rem;
+    width:100%; max-width:420px;
+    box-shadow:var(--sh-lg), 0 0 0 1px rgba(124,108,255,0.06);
+    position:relative; overflow:hidden;
+  }
+  .auth-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, var(--p2), transparent);
+    opacity:0.4;
+  }
+  .auth-logo { text-align:center; margin-bottom:2rem; }
+  .auth-logo-icon {
+    width:52px; height:52px; border-radius:16px;
+    background:var(--pg);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; margin:0 auto 1rem;
+    box-shadow:0 0 28px var(--glow), 0 0 60px rgba(124,108,255,0.12), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .auth-logo h1 { font-size:1.65rem; color:var(--t1); }
+  .auth-logo h1 span { background:var(--pg); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .auth-logo p { color:var(--t2); font-size:0.85rem; margin-top:0.35rem; }
+
+  .auth-tabs { display:flex; background:var(--base); border-radius:var(--r-sm); padding:3px; margin-bottom:1.5rem; border:1px solid var(--line); gap:2px; }
+  .auth-tab { flex:1; padding:0.48rem; text-align:center; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.82rem; color:var(--t3); transition:all 0.18s; font-family:'Instrument Sans',sans-serif; }
+  .auth-tab.active { background:var(--pg); color:#fff; box-shadow:0 0 12px var(--glow); }
+
+  .form-group { margin-bottom:0.9rem; }
+  .form-group label { display:block; font-size:0.7rem; font-weight:700; color:var(--t3); margin-bottom:0.38rem; text-transform:uppercase; letter-spacing:0.7px; }
+  .form-group input,.form-group select,.form-group textarea {
+    width:100%; padding:0.65rem 0.9rem;
+    border:1px solid var(--line2);
+    border-radius:var(--r-sm);
+    font-family:'Instrument Sans',sans-serif; font-size:0.88rem;
+    background:var(--base); color:var(--t1);
+    transition:border-color 0.15s, box-shadow 0.15s; outline:none;
+  }
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus {
+    border-color:var(--p); box-shadow:0 0 0 3px rgba(124,108,255,0.12);
+    background:var(--panel);
+  }
+  .form-group input::placeholder,.form-group textarea::placeholder { color:var(--t4); }
+  .form-group select option { background:var(--panel); }
+
+  .btn {
+    width:100%; padding:0.72rem; border-radius:var(--r-sm); border:none;
+    font-family:'Bricolage Grotesque',sans-serif; font-size:0.92rem; font-weight:700;
+    cursor:pointer; transition:all 0.18s cubic-bezier(0.4,0,0.2,1); letter-spacing:0.01em;
+  }
+  .btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-primary {
+    background:var(--pg); color:#fff;
+    box-shadow:0 0 20px var(--glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform:translateY(-1px);
+    box-shadow:0 0 30px var(--glow), 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .btn-primary:active:not(:disabled) { transform:translateY(0); }
+  .btn-outline {
+    background:transparent; border:1px solid var(--line2);
+    color:var(--t2);
+  }
+  .btn-outline:hover { border-color:var(--p); color:var(--t1); background:rgba(124,108,255,0.07); }
+  .btn-sm { width:auto; padding:0.38rem 0.9rem; font-size:0.78rem; }
+
+  .auth-switch { text-align:center; margin-top:1rem; font-size:0.82rem; color:var(--t2); }
+  .auth-switch a { color:var(--p2); cursor:pointer; font-weight:600; }
+  .auth-switch a:hover { color:#fff; }
+  .step-indicator { display:flex; gap:0.35rem; justify-content:center; margin-bottom:1.5rem; }
+  .step-dot { width:7px; height:7px; border-radius:50%; background:var(--rim); transition:all 0.25s; }
+  .step-dot.active { background:var(--p); width:22px; border-radius:4px; box-shadow:0 0 8px var(--glow); }
+  .err-msg { background:rgba(248,113,113,0.07); border:1px solid rgba(248,113,113,0.2); color:var(--err); border-radius:var(--r-sm); padding:0.55rem 0.85rem; font-size:0.82rem; margin-bottom:0.9rem; }
+  .otp-input {
+    width:100%; text-align:center; font-size:2rem; font-weight:800;
+    letter-spacing:0.7rem; padding:0.9rem 1rem;
+    border:1.5px solid var(--p); border-radius:var(--r);
+    background:var(--base); outline:none;
+    font-family:'Bricolage Grotesque',sans-serif; color:var(--t1);
+    box-shadow:0 0 20px rgba(124,108,255,0.1);
+  }
+
+  /* ─── MAIN LAYOUT ────────────────────────────────────────── */
+  .main { flex:1; padding:1.8rem 2rem; max-width:1160px; margin:0 auto; width:100%; }
+  .page-title { font-size:1.5rem; font-weight:800; margin-bottom:0.2rem; color:var(--t1); }
+  .page-sub { color:var(--t2); font-size:0.85rem; margin-bottom:1.4rem; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+  .card { background:var(--lift); border-radius:var(--r-lg); padding:1.4rem; box-shadow:var(--sh); border:1px solid var(--line); }
+  .loading { display:flex; align-items:center; justify-content:center; padding:3rem; color:var(--t2); gap:0.5rem; font-size:0.85rem; }
+  .spinner { width:18px; height:18px; border:2px solid var(--rim); border-top-color:var(--p); border-radius:50%; animation:spin 0.65s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ─── DISCOVER ───────────────────────────────────────────── */
+  .discover-wrapper { display:flex; gap:1.4rem; }
+  .discover-filters { width:210px; flex-shrink:0; }
+  .discover-cards { flex:1; }
+  .filter-section { margin-bottom:1.1rem; }
+  .filter-label { font-size:0.67rem; text-transform:uppercase; letter-spacing:0.9px; font-weight:700; color:var(--t3); margin-bottom:0.55rem; }
+  .filter-chip {
+    display:inline-flex; align-items:center; gap:0.3rem;
+    padding:0.25rem 0.7rem; border-radius:99px;
+    border:1px solid var(--line2); font-size:0.74rem; cursor:pointer;
+    margin:0.15rem; transition:all 0.15s;
+    background:var(--panel); color:var(--t2); font-weight:500;
+  }
+  .filter-chip:hover { border-color:var(--line3); color:var(--t1); }
+  .filter-chip.active { border-color:var(--p); background:rgba(124,108,255,0.12); color:var(--p2); font-weight:700; }
+
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(236px,1fr)); gap:1rem; }
+  .profile-card {
+    background:var(--lift); border-radius:var(--r-lg);
+    overflow:hidden; border:1px solid var(--line);
+    transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s, border-color 0.2s;
+    cursor:default;
+  }
+  .profile-card:hover { transform:translateY(-5px) scale(1.005); box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px var(--line3); }
+  .profile-card-banner { height:84px; }
+  .profile-card-avatar {
+    width:60px; height:60px; border-radius:50%;
+    border:2.5px solid var(--lift);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:1.1rem; color:#fff;
+    margin-top:-30px; overflow:hidden;
+  }
+  .profile-card-body { padding:0.7rem 1rem 1rem; }
+  .profile-card-name { font-family:'Bricolage Grotesque',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:0.12rem; color:var(--t1); }
+  .profile-card-college { font-size:0.74rem; color:var(--t2); margin-bottom:0.55rem; }
+
+  .tag { display:inline-flex; padding:0.18rem 0.55rem; border-radius:99px; font-size:0.67rem; font-weight:700; margin:0.12rem 0.08rem; letter-spacing:0.02em; }
+  .tag-style { background:rgba(124,108,255,0.12); color:var(--p2); }
+  .tag-subject { background:rgba(74,222,128,0.1); color:var(--ok); }
+
+  .card-actions { display:flex; gap:0.45rem; margin-top:0.75rem; }
+  .btn-pass {
+    flex:1; padding:0.45rem; border-radius:var(--r-sm);
+    border:1px solid var(--line2); background:transparent;
+    color:var(--t2); font-weight:600; cursor:pointer;
+    font-size:0.8rem; transition:all 0.15s;
+    font-family:'Instrument Sans',sans-serif;
+  }
+  .btn-pass:hover { background:var(--panel); color:var(--t1); border-color:var(--line3); }
+  .btn-like {
+    flex:1; padding:0.45rem; border-radius:var(--r-sm); border:none;
+    background:var(--pg); color:#fff; font-weight:700;
+    cursor:pointer; font-size:0.8rem; transition:all 0.18s;
+    font-family:'Bricolage Grotesque',sans-serif;
+    box-shadow:0 0 12px var(--glow);
+  }
+  .btn-like:hover { transform:scale(1.04); box-shadow:0 0 20px var(--glow); }
+  .btn-like:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+  /* ─── MESSAGES ───────────────────────────────────────────── */
+  .chat-layout { display:flex; height:calc(100vh - 130px); gap:1rem; }
+  .chat-sidebar { width:270px; flex-shrink:0; background:var(--lift); border:1px solid var(--line); border-radius:var(--r-lg); overflow-y:auto; }
+  .chat-sidebar-header { padding:1rem 1.1rem 0.7rem; font-weight:700; font-size:0.72rem; color:var(--t3); text-transform:uppercase; letter-spacing:0.7px; }
+  .chat-item { display:flex; align-items:center; gap:0.7rem; padding:0.8rem 1.1rem; cursor:pointer; transition:background 0.14s; border-bottom:1px solid var(--line); }
+  .chat-item:hover { background:var(--panel); }
+  .chat-item.active { background:rgba(124,108,255,0.1); border-left:2px solid var(--p); }
+  .match-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:0.9rem; flex-shrink:0; overflow:hidden; }
+  .chat-item-info { flex:1; min-width:0; }
+  .chat-item-name { font-weight:600; font-size:0.85rem; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat-item-preview { font-size:0.73rem; color:var(--t3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:0.1rem; }
+  .unread-dot { width:7px; height:7px; border-radius:50%; background:var(--p); flex-shrink:0; box-shadow:0 0 6px var(--glow); }
+  .chat-main { flex:1; background:var(--lift); border:1px solid var(--line); border-radius:var(--r-lg); display:flex; flex-direction:column; overflow:hidden; }
+  .chat-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--t3); gap:0.45rem; font-size:0.85rem; }
+  .chat-header { padding:0.9rem 1.2rem; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:0.7rem; background:var(--panel); }
+  .chat-messages { flex:1; overflow-y:auto; padding:1rem 1.2rem; display:flex; flex-direction:column; gap:0.45rem; }
+  .msg { display:flex; flex-direction:column; }
+  .msg.me { align-items:flex-end; }
+  .msg.them { align-items:flex-start; }
+  .msg-bubble { padding:0.52rem 0.85rem; border-radius:14px; max-width:68%; font-size:0.84rem; line-height:1.45; word-break:break-word; }
+  .msg.me .msg-bubble { background:var(--pg); color:#fff; border-bottom-right-radius:3px; }
+  .msg.them .msg-bubble { background:var(--rim); color:var(--t1); border-bottom-left-radius:3px; }
+  .msg-time { font-size:0.63rem; color:var(--t3); margin-top:0.18rem; padding:0 0.25rem; }
+  .chat-input-row { padding:0.8rem 1rem; border-top:1px solid var(--line); display:flex; gap:0.5rem; background:var(--panel); }
+  .chat-input { flex:1; background:var(--base); border:1px solid var(--line2); border-radius:var(--r-sm); padding:0.55rem 0.9rem; color:var(--t1); font-family:'Instrument Sans',sans-serif; font-size:0.84rem; outline:none; transition:border-color 0.15s; }
+  .chat-input:focus { border-color:var(--p); box-shadow:0 0 0 2px rgba(124,108,255,0.1); }
+  .chat-input::placeholder { color:var(--t4); }
+  .chat-send { background:var(--pg); border:none; color:#fff; border-radius:var(--r-sm); padding:0.55rem 1rem; font-weight:700; cursor:pointer; font-size:0.82rem; transition:all 0.15s; box-shadow:0 0 10px var(--glow); font-family:'Bricolage Grotesque',sans-serif; }
+  .chat-send:hover { transform:scale(1.04); box-shadow:0 0 16px var(--glow); }
+
+  /* ─── PROFILE ────────────────────────────────────────────── */
+  .profile-hero {
+    display:flex; align-items:center; gap:1.4rem;
+    padding:1.6rem; border-radius:var(--r-xl);
+    background:linear-gradient(135deg, var(--lift) 0%, var(--panel) 100%);
+    border:1px solid var(--line2); margin-bottom:1.4rem;
+    position:relative; overflow:hidden;
+  }
+  .profile-hero::before {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:180px; height:180px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,108,255,0.12) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .profile-hero-avatar { width:76px; height:76px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.7rem; font-weight:800; color:#fff; overflow:hidden; border:2px solid var(--line3); box-shadow:0 0 20px var(--glow); flex-shrink:0; }
+  .profile-hero-info h2 { font-size:1.3rem; margin-bottom:0.15rem; color:var(--t1); }
+  .profile-hero-info p { color:var(--t2); font-size:0.84rem; }
+
+  .style-options { display:flex; gap:0.45rem; flex-wrap:wrap; margin-top:0.4rem; }
+  .style-opt { padding:0.35rem 0.8rem; border-radius:99px; border:1px solid var(--line2); cursor:pointer; font-size:0.78rem; font-weight:500; transition:all 0.15s; background:var(--panel); color:var(--t2); }
+  .style-opt:hover { border-color:var(--p); color:var(--t1); }
+  .style-opt.selected { background:rgba(124,108,255,0.15); border-color:var(--p); color:var(--p2); font-weight:700; }
+
+  /* ─── STUDY TOOLS ────────────────────────────────────────── */
+  .timer-circle {
+    width:196px; height:196px; border-radius:50%;
+    margin:1.5rem auto;
+    background:conic-gradient(var(--p) calc(var(--prog,100)*1%), var(--rim) 0);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Bricolage Grotesque',sans-serif; font-size:2.6rem; font-weight:800; color:var(--t1);
+    box-shadow:0 0 0 10px var(--panel), 0 0 0 12px var(--line2), 0 0 40px var(--glow);
+  }
+  .timer-controls { display:flex; gap:0.55rem; justify-content:center; margin-top:1rem; }
+  .timer-btn {
+    padding:0.5rem 1.3rem; border-radius:var(--r-sm);
+    border:1px solid var(--line2); font-weight:700; cursor:pointer;
+    font-family:'Bricolage Grotesque',sans-serif; font-size:0.85rem;
+    background:var(--panel); color:var(--t1); transition:all 0.15s;
+  }
+  .timer-btn:hover { background:var(--p); color:#fff; border-color:var(--p); box-shadow:0 0 12px var(--glow); }
+  .goals-list { list-style:none; }
+  .goals-list li { display:flex; align-items:center; gap:0.6rem; padding:0.55rem 0; border-bottom:1px solid var(--line); font-size:0.84rem; color:var(--t1); }
+  .goals-list li.done { text-decoration:line-through; color:var(--t3); }
+  .goals-list li input[type=checkbox] { accent-color:var(--p); width:15px; height:15px; cursor:pointer; }
+  .goal-input-row { display:flex; gap:0.5rem; margin-top:0.75rem; }
+  .goal-input { flex:1; border:1px solid var(--line2); border-radius:var(--r-sm); padding:0.48rem 0.75rem; font-family:'Instrument Sans',sans-serif; font-size:0.84rem; outline:none; background:var(--base); color:var(--t1); transition:border-color 0.15s; }
+  .goal-input::placeholder { color:var(--t4); }
+  .goal-input:focus { border-color:var(--p); }
+
+  /* ─── RATING ─────────────────────────────────────────────── */
+  .star { font-size:1.5rem; cursor:pointer; transition:transform 0.12s; }
+  .star:hover { transform:scale(1.25); }
+  .rating-row { display:flex; align-items:center; justify-content:space-between; padding:0.55rem 0; border-bottom:1px solid var(--line); }
+
+  /* ─── ADMIN ──────────────────────────────────────────────── */
+  .stat-card { background:var(--panel); border-radius:var(--r-lg); padding:1.2rem 1.4rem; border:1px solid var(--line); position:relative; overflow:hidden; }
+  .stat-card::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--pg); }
+  .stat-num { font-family:'Bricolage Grotesque',sans-serif; font-size:1.9rem; font-weight:800; background:var(--pg); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .stat-label { color:var(--t2); font-size:0.78rem; margin-top:0.1rem; }
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; padding:0.55rem 1rem; font-size:0.67rem; text-transform:uppercase; letter-spacing:0.7px; color:var(--t3); border-bottom:1px solid var(--line); font-weight:700; }
+  .table td { padding:0.7rem 1rem; border-bottom:1px solid var(--line); font-size:0.84rem; color:var(--t1); }
+  .table tr:hover td { background:var(--panel); }
+  .badge { display:inline-flex; padding:0.18rem 0.55rem; border-radius:99px; font-size:0.68rem; font-weight:700; letter-spacing:0.02em; }
+  .badge-active { background:rgba(74,222,128,0.1); color:var(--ok); }
+  .badge-admin  { background:rgba(124,108,255,0.12); color:var(--p2); }
+
+  /* ─── TOAST ──────────────────────────────────────────────── */
+  .toast {
+    position:fixed; bottom:1.4rem; right:1.4rem; z-index:9999;
+    background:var(--panel); color:var(--t1);
+    padding:0.75rem 1.15rem; border-radius:var(--r);
+    font-size:0.84rem; font-weight:500;
+    box-shadow:var(--sh-lg); animation:slideup 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    max-width:310px; border:1px solid var(--line2);
+  }
+  .toast.success { border-left:3px solid var(--ok); }
+  .toast.match   { border-left:3px solid var(--p2); box-shadow:var(--sh-lg), 0 0 20px rgba(124,108,255,0.2); }
+  .toast.error   { border-left:3px solid var(--err); }
+  @keyframes slideup { from { transform:translateY(16px) scale(0.96); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
+
+  /* ─── FRIENDS ────────────────────────────────────────────── */
+  .friends-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem; }
+  .friend-card { background:var(--lift); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1), border-color 0.2s; }
+  .friend-card:hover { transform:translateY(-4px); border-color:var(--line3); }
+
+  /* ─── ROOMS ──────────────────────────────────────────────── */
+  .room-card {
+    background:var(--lift); border-radius:var(--r-lg);
+    border:1px solid var(--line); overflow:hidden;
+    transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s, border-color 0.2s;
+  }
+  .room-card:hover { transform:translateY(-5px); box-shadow:0 20px 50px rgba(0,0,0,0.5); border-color:var(--line3); }
+  .room-banner { height:86px; display:flex; align-items:center; justify-content:center; font-size:2.3rem; position:relative; overflow:hidden; }
+  .room-banner::after { content:''; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.4) 100%); }
+  .room-body { padding:1rem 1.1rem 1.1rem; }
+  .room-name { font-family:'Bricolage Grotesque',sans-serif; font-size:0.95rem; font-weight:800; margin-bottom:0.2rem; color:var(--t1); }
+  .room-meta { font-size:0.74rem; color:var(--t2); margin-bottom:0.7rem; }
+  .room-inside {
+    background:var(--lift);
+    border:1px solid var(--line);
+    border-radius:var(--r-xl); padding:1.5rem; margin-bottom:1.2rem;
+    position:relative; overflow:hidden;
+  }
+  .room-inside::before {
+    content:''; position:absolute; top:-60px; left:50%; transform:translateX(-50%);
+    width:300px; height:300px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,108,255,0.06) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .room-timer-display { font-family:'Bricolage Grotesque',sans-serif; font-size:3.8rem; font-weight:800; text-align:center; letter-spacing:-3px; color:var(--t1); }
+  .room-phase { text-align:center; font-size:0.82rem; color:var(--t2); margin-bottom:0.8rem; }
+  .lofi-player { background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:var(--r); padding:0.9rem; margin-top:1rem; display:flex; align-items:center; gap:0.85rem; }
+  .lofi-info { flex:1; min-width:0; }
+  .lofi-title { font-weight:700; font-size:0.84rem; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lofi-sub { font-size:0.69rem; color:var(--t3); margin-top:0.08rem; }
+  .lofi-btn { width:36px; height:36px; border-radius:50%; background:var(--pg); border:none; color:#fff; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; box-shadow:0 0 10px var(--glow); }
+  .lofi-btn:hover { transform:scale(1.12); box-shadow:0 0 18px var(--glow); }
+  .member-chip { display:flex; align-items:center; gap:0.32rem; background:rgba(255,255,255,0.04); border:1px solid var(--line); border-radius:99px; padding:0.25rem 0.65rem 0.25rem 0.25rem; font-size:0.73rem; color:var(--t2); }
+
+  /* Private room modal */
+  .private-room { position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:500; display:flex; align-items:center; justify-content:center; padding:1rem; }
+  .private-room-box { background:var(--lift); border-radius:var(--r-xl); width:100%; max-width:480px; max-height:92vh; display:flex; flex-direction:column; border:1px solid var(--line2); overflow:hidden; box-shadow:var(--sh-lg); }
+  .private-room-header { padding:1.1rem 1.4rem; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:0.9rem; background:var(--panel); }
+  .private-room-chat { flex:1; overflow-y:auto; padding:1rem 1.2rem; display:flex; flex-direction:column; gap:0.45rem; min-height:180px; max-height:280px; }
+  .private-room-input { padding:0.9rem 1rem; border-top:1px solid var(--line); display:flex; gap:0.45rem; background:var(--panel); }
+
+  /* ─── AI TUTOR ───────────────────────────────────────────── */
+  .ai-wrap { display:flex; flex-direction:column; height:calc(100vh - 130px); max-width:800px; margin:0 auto; }
+  .ai-header { padding-bottom:1rem; border-bottom:1px solid var(--line); margin-bottom:0; }
+  .ai-messages { flex:1; overflow-y:auto; padding:1rem 0; display:flex; flex-direction:column; gap:1rem; }
+  .ai-bubble-wrap { display:flex; gap:0.65rem; align-items:flex-start; }
+  .ai-bubble-wrap.user { flex-direction:row-reverse; }
+  .ai-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0; font-weight:700; }
+  .ai-bubble { max-width:78%; padding:0.75rem 0.95rem; border-radius:16px; font-size:0.85rem; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+  .ai-bubble.assistant { background:var(--lift); border:1px solid var(--line); border-top-left-radius:3px; color:var(--t1); }
+  .ai-bubble.user { background:var(--pg); color:#fff; border-top-right-radius:3px; box-shadow:0 0 16px var(--glow); }
+  .ai-bubble code { background:rgba(124,108,255,0.12); padding:0.1rem 0.35rem; border-radius:4px; font-family:'Fira Code',monospace; font-size:0.82em; color:var(--p2); }
+  .ai-bubble pre { background:var(--base); border:1px solid var(--line); padding:0.75rem 1rem; border-radius:var(--r-sm); overflow-x:auto; margin:0.5rem 0; font-size:0.77rem; }
+  .ai-bubble pre code { background:none; padding:0; color:#93c5fd; }
+  .ai-bubble strong { font-weight:700; color:var(--p2); }
+  .ai-input-row { display:flex; gap:0.55rem; padding-top:0.75rem; border-top:1px solid var(--line); }
+  .ai-input {
+    flex:1; border:1px solid var(--line2); border-radius:var(--r);
+    padding:0.72rem 0.95rem; font-family:'Instrument Sans',sans-serif; font-size:0.86rem;
+    outline:none; background:var(--lift); color:var(--t1);
+    resize:none; line-height:1.45; max-height:120px; transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  .ai-input:focus { border-color:var(--p); box-shadow:0 0 0 3px rgba(124,108,255,0.1); }
+  .ai-input::placeholder { color:var(--t4); }
+  .ai-send {
+    background:var(--pg); border:none; color:#fff; border-radius:var(--r);
+    padding:0.72rem 1.1rem; cursor:pointer; font-size:1rem; flex-shrink:0;
+    transition:all 0.18s; box-shadow:0 0 14px var(--glow);
+  }
+  .ai-send:disabled { opacity:0.35; cursor:not-allowed; box-shadow:none; }
+  .ai-send:hover:not(:disabled) { transform:scale(1.06); box-shadow:0 0 22px var(--glow); }
+  .ai-typing { display:flex; gap:5px; align-items:center; padding:0.45rem 0.15rem; }
+  .ai-dot { width:6px; height:6px; border-radius:50%; background:var(--t3); animation:bounce 1.2s infinite; }
+  .ai-dot:nth-child(2) { animation-delay:0.18s; }
+  .ai-dot:nth-child(3) { animation-delay:0.36s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }
+  .ai-suggestion { display:inline-flex; background:var(--panel); border:1px solid var(--line2); border-radius:99px; padding:0.35rem 0.8rem; font-size:0.74rem; cursor:pointer; transition:all 0.15s; white-space:nowrap; color:var(--t2); font-weight:500; }
+  .ai-suggestion:hover { background:rgba(124,108,255,0.15); border-color:var(--p); color:var(--p2); }
+
+  /* ─── MOBILE NAV ─────────────────────────────────────────── */
+  .mobile-nav { display:none; }
+  @media (max-width:768px) {
+    .discover-wrapper { flex-direction:column; }
+    .discover-filters { width:100%; }
+    .chat-layout { flex-direction:column; height:auto; }
+    .chat-sidebar { width:100%; height:190px; }
+    .grid-2 { grid-template-columns:1fr; }
+    .main { padding:1rem; padding-bottom:82px; }
+    .nav-tabs { display:none; }
+    .mobile-nav {
+      display:flex; position:fixed; bottom:0; left:0; right:0;
+      background:rgba(5,5,10,0.92);
+      backdrop-filter:blur(24px) saturate(180%);
+      -webkit-backdrop-filter:blur(24px) saturate(180%);
+      z-index:200; border-top:1px solid var(--line2);
+      padding:0.38rem 0 env(safe-area-inset-bottom, 0.55rem);
+    }
+    .mobile-nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:0.12rem; background:none; border:none; color:var(--t4); cursor:pointer; padding:0.28rem 0; font-size:0.48rem; font-family:'Bricolage Grotesque',sans-serif; transition:color 0.15s; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
+    .mobile-nav-btn.active { color:var(--p2); }
+    .mobile-nav-btn span:first-child { font-size:1.1rem; }
   }
 `;
 
+
+
 const STUDY_STYLES  = ["Quiet","Collaborative","Exam Prep","Group Discussion","Online Only"];
 const SUBJECTS_LIST = ["Machine Learning","Data Structures","Algorithms","Web Dev","React","Statistics","Calculus","Linear Algebra","Networks","Operating Systems","Python","Physics","Chemistry","Database","Cloud Computing"];
-const COLORS        = ["#e8500a","#2563eb","#16a34a","#7c3aed","#db2777","#d97706"];
+const COLORS        = ["#7c6cff","#b060ff","#34d399","#f59e0b","#ec4899","#22d3ee"];
 const userColor     = (id) => COLORS[(id || 0) % COLORS.length];
 const getInitials   = (name) => (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 const fmtTime       = (ts)  => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -383,7 +710,7 @@ function Auth({ onLogin }) {
 
             {step === 2 && (
               <>
-                <p style={{ textAlign:"center", color:"var(--muted)", fontSize:"0.88rem", marginBottom:"1rem" }}>
+                <p style={{ textAlign:"center", color:"var(--t2)", fontSize:"0.88rem", marginBottom:"1rem" }}>
                   Enter the 5-digit OTP sent to <strong>{email}</strong>
                 </p>
                 <div className="form-group">
@@ -420,7 +747,7 @@ function Auth({ onLogin }) {
                   <div style={{ display:"flex", gap:"0.5rem" }}>
                     <input placeholder="Add your own style..." value={customStyle} onChange={e => setCustomStyle(e.target.value)}
                       onKeyDown={e => e.key==="Enter" && addCustomStyle()}
-                      style={{ flex:1, padding:"0.5rem 0.75rem", border:"1.5px solid var(--border)", borderRadius:8, fontSize:"0.88rem", background:"var(--cream)", outline:"none", fontFamily:"inherit" }} />
+                      style={{ flex:1, padding:"0.5rem 0.75rem", border:"1px solid var(--line2)", borderRadius:"var(--r-sm)", fontSize:"0.85rem", background:"var(--base)", outline:"none", fontFamily:"inherit", color:"var(--t1)" }} />
                     <button className="btn btn-outline btn-sm" onClick={addCustomStyle}>+ Add</button>
                   </div>
                 </div>
@@ -435,7 +762,7 @@ function Auth({ onLogin }) {
                   <div style={{ display:"flex", gap:"0.5rem" }}>
                     <input placeholder="Add your own subject..." value={customSubject} onChange={e => setCustomSubject(e.target.value)}
                       onKeyDown={e => e.key==="Enter" && addCustomSubject()}
-                      style={{ flex:1, padding:"0.5rem 0.75rem", border:"1.5px solid var(--border)", borderRadius:8, fontSize:"0.88rem", background:"var(--cream)", outline:"none", fontFamily:"inherit" }} />
+                      style={{ flex:1, padding:"0.5rem 0.75rem", border:"1px solid var(--line2)", borderRadius:"var(--r-sm)", fontSize:"0.85rem", background:"var(--base)", outline:"none", fontFamily:"inherit", color:"var(--t1)" }} />
                     <button className="btn btn-outline btn-sm" onClick={addCustomSubject}>+ Add</button>
                   </div>
                 </div>
@@ -510,7 +837,7 @@ function Discover({ user, onMatch, onToast }) {
         <div className="discover-cards">
           {loading && <div className="loading"><div className="spinner" /> Finding students...</div>}
           {!loading && users.length === 0 && (
-            <div className="card" style={{ textAlign:"center", padding:"3rem", color:"var(--muted)" }}>
+            <div className="card" style={{ textAlign:"center", padding:"3rem", color:"var(--t2)" }}>
               <div style={{ fontSize:"2.5rem", marginBottom:"0.5rem" }}>🎓</div>
               <div style={{ fontWeight:600 }}>No more profiles right now!</div>
               <div style={{ fontSize:"0.88rem", marginTop:"0.3rem" }}>Try clearing filters or check back later.</div>
@@ -520,7 +847,7 @@ function Discover({ user, onMatch, onToast }) {
           <div className="cards-grid">
             {users.map(u => (
               <div className="profile-card" key={u.id}>
-                <div className="profile-card-banner" style={{ background:`linear-gradient(135deg, ${userColor(u.id)} 0%, #1e293b 100%)` }} />
+                <div className="profile-card-banner" style={{ background:`linear-gradient(135deg, ${userColor(u.id)}55 0%, #0c0c14 100%)` }} />
                 <div style={{ padding:"0 1rem" }}>
                   <div className="profile-card-avatar" style={{ background:userColor(u.id) }}>{u.photo ? <img src={u.photo} alt={u.name} /> : (u.initials || getInitials(u.name))}</div>
                 </div>
@@ -609,7 +936,7 @@ function Messages({ user, onToast }) {
         <div className="chat-sidebar">
           {loading && <div className="loading"><div className="spinner" /></div>}
           {!loading && matches.length === 0 && (
-            <div className="card" style={{ textAlign:"center", color:"var(--muted)", padding:"2rem", fontSize:"0.9rem" }}>
+            <div className="card" style={{ textAlign:"center", color:"var(--t2)", padding:"2rem", fontSize:"0.9rem" }}>
               No matches yet. Start discovering! 🔍
             </div>
           )}
@@ -635,12 +962,12 @@ function Messages({ user, onToast }) {
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontWeight:600 }}>{active.name}</div>
-                  <div style={{ fontSize:"0.78rem", color:"var(--muted)" }}>{active.college}</div>
+                  <div style={{ fontSize:"0.78rem", color:"var(--t2)" }}>{active.college}</div>
                 </div>
               </div>
               <div className="chat-messages">
                 {messages.length === 0 && (
-                  <div style={{ textAlign:"center", color:"var(--muted)", padding:"2rem", fontSize:"0.9rem" }}>Start the conversation! 👋</div>
+                  <div style={{ textAlign:"center", color:"var(--t2)", padding:"2rem", fontSize:"0.9rem" }}>Start the conversation! 👋</div>
                 )}
                 {messages.map((m, i) => (
                   <div key={m.id || i} className={`msg ${m.sender_id === user.id ? "me" : "them"}`}>
@@ -752,7 +1079,7 @@ function Profile({ user, setUser, onToast }) {
                 <div className="pic-overlay">📷<br/>Upload</div>
               </div>
             </div>
-            <p style={{ fontSize:"0.75rem", color:"var(--muted)", marginTop:"0.4rem" }}>Max 2MB · JPG, PNG</p>
+            <p style={{ fontSize:"0.75rem", color:"var(--t2)", marginTop:"0.4rem" }}>Max 2MB · JPG, PNG</p>
           </div>
           <div className="form-group"><label>Full Name</label><input value={name} onChange={e => setName(e.target.value)} /></div>
           <div className="form-group"><label>College</label><input value={college} onChange={e => setCollege(e.target.value)} /></div>
@@ -768,7 +1095,7 @@ function Profile({ user, setUser, onToast }) {
             <div style={{ display:"flex", gap:"0.5rem", marginTop:"0.4rem" }}>
               <input placeholder="Add custom style..." value={customStyle} onChange={e => setCustomStyle(e.target.value)}
                 onKeyDown={e => e.key==="Enter" && addCustomStyle()}
-                style={{ flex:1, padding:"0.5rem 0.75rem", border:"1.5px solid var(--border)", borderRadius:8, fontSize:"0.88rem", background:"var(--cream)", outline:"none", fontFamily:"inherit" }} />
+                style={{ flex:1, padding:"0.5rem 0.75rem", border:"1px solid var(--line2)", borderRadius:"var(--r-sm)", fontSize:"0.85rem", background:"var(--base)", outline:"none", fontFamily:"inherit", color:"var(--t1)" }} />
               <button className="btn btn-outline btn-sm" onClick={addCustomStyle}>+ Add</button>
             </div>
           </div>
@@ -783,7 +1110,7 @@ function Profile({ user, setUser, onToast }) {
             <div style={{ display:"flex", gap:"0.5rem", marginTop:"0.4rem" }}>
               <input placeholder="Add custom subject..." value={customSubject} onChange={e => setCustomSubject(e.target.value)}
                 onKeyDown={e => e.key==="Enter" && addCustomSubject()}
-                style={{ flex:1, padding:"0.5rem 0.75rem", border:"1.5px solid var(--border)", borderRadius:8, fontSize:"0.88rem", background:"var(--cream)", outline:"none", fontFamily:"inherit" }} />
+                style={{ flex:1, padding:"0.5rem 0.75rem", border:"1px solid var(--line2)", borderRadius:"var(--r-sm)", fontSize:"0.85rem", background:"var(--base)", outline:"none", fontFamily:"inherit", color:"var(--t1)" }} />
               <button className="btn btn-outline btn-sm" onClick={addCustomSubject}>+ Add</button>
             </div>
           </div>
@@ -836,13 +1163,13 @@ function StudyTools({ onToast }) {
       <div className="grid-2" style={{ maxWidth:800 }}>
         <div className="card" style={{ textAlign:"center" }}>
           <div style={{ marginBottom:"0.75rem" }}>
-            <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.4rem" }}>Focus</div>
+            <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--t2)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.4rem" }}>Focus</div>
             <div style={{ display:"flex", gap:"0.4rem", justifyContent:"center", flexWrap:"wrap", marginBottom:"0.5rem" }}>
               {MODES.filter(m=>m.type==="focus").map(m => (
                 <div key={m.id} className={`filter-chip ${modeId===m.id?"active":""}`} onClick={() => switchMode(m.id)}>{m.label}</div>
               ))}
             </div>
-            <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.4rem" }}>Break</div>
+            <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--t2)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.4rem" }}>Break</div>
             <div style={{ display:"flex", gap:"0.4rem", justifyContent:"center", flexWrap:"wrap" }}>
               {MODES.filter(m=>m.type==="break").map(m => (
                 <div key={m.id} className={`filter-chip ${modeId===m.id?"active":""}`} onClick={() => switchMode(m.id)}>{m.label}</div>
@@ -851,19 +1178,19 @@ function StudyTools({ onToast }) {
           </div>
           <div className="timer-circle" style={{"--prog":prog}}>{fmt(secs)}</div>
           <div className="timer-controls">
-            <button className="timer-btn" style={{ background:"var(--ink)", color:"var(--paper)" }} onClick={() => setRunning(p=>!p)}>{running ? "⏸ Pause" : "▶ Start"}</button>
-            <button className="timer-btn" style={{ background:"var(--cream)", border:"1.5px solid var(--border)" }} onClick={() => { setRunning(false); setSecs(curMode.secs); }}>↺ Reset</button>
+            <button className="timer-btn" style={{ background:"var(--pg)", color:"#fff" }} onClick={() => setRunning(p=>!p)}>{running ? "⏸ Pause" : "▶ Start"}</button>
+            <button className="timer-btn" style={{ background:"var(--panel)", border:"1px solid var(--line2)" }} onClick={() => { setRunning(false); setSecs(curMode.secs); }}>↺ Reset</button>
           </div>
         </div>
         <div className="card">
           <h3 style={{ marginBottom:"1rem" }}>Session Goals</h3>
-          {goals.length===0 && <p style={{ color:"var(--muted)", fontSize:"0.88rem", marginBottom:"0.5rem" }}>Add goals for this session...</p>}
+          {goals.length===0 && <p style={{ color:"var(--t2)", fontSize:"0.88rem", marginBottom:"0.5rem" }}>Add goals for this session...</p>}
           <ul className="goals-list">
             {goals.map(g => (
               <li key={g.id} className={g.done?"done":""}>
                 <input type="checkbox" checked={g.done} onChange={() => setGoals(p=>p.map(x=>x.id===g.id?{...x,done:!x.done}:x))}/>
                 <span style={{ flex:1 }}>{g.text}</span>
-                <span style={{ cursor:"pointer", color:"var(--muted)" }} onClick={() => setGoals(p=>p.filter(x=>x.id!==g.id))}>✕</span>
+                <span style={{ cursor:"pointer", color:"var(--t2)" }} onClick={() => setGoals(p=>p.filter(x=>x.id!==g.id))}>✕</span>
               </li>
             ))}
           </ul>
@@ -872,7 +1199,7 @@ function StudyTools({ onToast }) {
             <button className="btn btn-primary btn-sm" onClick={addGoal}>+ Add</button>
           </div>
           {goals.length>0 && (
-            <div style={{ marginTop:"1rem", padding:"0.6rem 0.8rem", background:"var(--cream)", borderRadius:"10px", fontSize:"0.85rem", color:"var(--muted)" }}>
+            <div style={{ marginTop:"1rem", padding:"0.6rem 0.8rem", background:"var(--panel)", borderRadius:"10px", fontSize:"0.85rem", color:"var(--t2)" }}>
               ✅ {goals.filter(g=>g.done).length}/{goals.length} goals complete
             </div>
           )}
@@ -941,7 +1268,7 @@ function Rating({ user, onToast }) {
           <div style={{ textAlign:"center", padding:"2rem", color:"var(--green)" }}>
             <div style={{ fontSize:"2.5rem" }}>✅</div>
             <div style={{ fontWeight:700, fontSize:"1.1rem", marginTop:"0.5rem" }}>Rating Submitted!</div>
-            <div style={{ color:"var(--muted)", fontSize:"0.9rem", marginTop:"0.3rem" }}>Thank you for helping our community.</div>
+            <div style={{ color:"var(--t2)", fontSize:"0.9rem", marginTop:"0.3rem" }}>Thank you for helping our community.</div>
           </div>
         )}
       </div>
@@ -1003,7 +1330,7 @@ function Admin({ onToast }) {
           <h3>All Users ({users.length})</h3>
         </div>
         {users.length === 0 ? (
-          <div style={{ textAlign:"center", padding:"2rem", color:"var(--muted)" }}>No users signed up yet</div>
+          <div style={{ textAlign:"center", padding:"2rem", color:"var(--t2)" }}>No users signed up yet</div>
         ) : (
           <table className="table">
             <thead>
@@ -1026,7 +1353,7 @@ function Admin({ onToast }) {
                       {u.name}
                     </div>
                   </td>
-                  <td style={{ fontSize:"0.82rem", color:"var(--muted)" }}>{u.email}</td>
+                  <td style={{ fontSize:"0.82rem", color:"var(--t2)" }}>{u.email}</td>
                   <td>{u.college}</td>
                   <td>{u.style && <span className="tag tag-style">{u.style}</span>}</td>
                   <td><span className={`badge ${u.is_admin?"badge-admin":"badge-active"}`}>{u.is_admin?"Admin":"Active"}</span></td>
@@ -1061,7 +1388,7 @@ function Friends({ user, onToast, onMessage }) {
       <p className="page-sub">Your study partners — tap a card to see full profile</p>
 
       {matches.length === 0 && (
-        <div className="card" style={{ textAlign:"center", padding:"3rem", color:"var(--muted)" }}>
+        <div className="card" style={{ textAlign:"center", padding:"3rem", color:"var(--t2)" }}>
           <div style={{ fontSize:"3rem", marginBottom:"1rem" }}>🤝</div>
           <div style={{ fontWeight:600, marginBottom:"0.5rem" }}>No friends yet!</div>
           <div style={{ fontSize:"0.9rem" }}>Start liking people in Discover to get matches</div>
@@ -1081,32 +1408,32 @@ function Friends({ user, onToast, onMessage }) {
                   </div>
                   <div style={{ paddingBottom:"0.2rem", flex:1 }}>
                     <div style={{ fontWeight:700, fontSize:"1.05rem" }}>{m.name}</div>
-                    <div style={{ fontSize:"0.8rem", color:"var(--muted)" }}>📍 {m.college || "Unknown"}</div>
+                    <div style={{ fontSize:"0.8rem", color:"var(--t2)" }}>📍 {m.college || "Unknown"}</div>
                   </div>
                   <button onClick={() => setExpanded(isOpen ? null : m.match_id)}
-                    style={{ background:"var(--cream)", border:"1.5px solid var(--border)", borderRadius:8, padding:"0.3rem 0.7rem", fontSize:"0.78rem", cursor:"pointer", fontWeight:600, color:"var(--ink)", marginBottom:"0.2rem", flexShrink:0 }}>
+                    style={{ background:"var(--panel)", border:"1.5px solid var(--line2)", borderRadius:8, padding:"0.3rem 0.7rem", fontSize:"0.78rem", cursor:"pointer", fontWeight:600, color:"var(--base)", marginBottom:"0.2rem", flexShrink:0 }}>
                     {isOpen ? "▲ Hide" : "▼ View"}
                   </button>
                 </div>
 
                 {isOpen && (
-                  <div style={{ borderTop:"1px solid var(--border)", paddingTop:"0.75rem", marginBottom:"0.75rem" }}>
+                  <div style={{ borderTop:"1px solid var(--line2)", paddingTop:"0.75rem", marginBottom:"0.75rem" }}>
                     {m.style && (
                       <div style={{ marginBottom:"0.5rem" }}>
-                        <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.25rem" }}>Study Style</div>
+                        <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--t2)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.25rem" }}>Study Style</div>
                         <span className="tag tag-style">{m.style}</span>
                       </div>
                     )}
                     {m.subjects?.length > 0 && (
                       <div style={{ marginBottom:"0.5rem" }}>
-                        <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.25rem" }}>Subjects</div>
+                        <div style={{ fontSize:"0.72rem", fontWeight:600, color:"var(--t2)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:"0.25rem" }}>Subjects</div>
                         <div style={{ display:"flex", flexWrap:"wrap", gap:"0.3rem" }}>
                           {m.subjects.map(s => <span key={s} className="tag">{s}</span>)}
                         </div>
                       </div>
                     )}
                     {!m.style && !m.subjects?.length && (
-                      <div style={{ color:"var(--muted)", fontSize:"0.85rem", marginBottom:"0.5rem" }}>No extra info yet</div>
+                      <div style={{ color:"var(--t2)", fontSize:"0.85rem", marginBottom:"0.5rem" }}>No extra info yet</div>
                     )}
                   </div>
                 )}
@@ -1471,7 +1798,7 @@ function StudyRooms({ user, onToast }) {
           </div>
           <div style={{display:"flex",gap:"0.6rem"}}>
             <button onClick={()=>{setView("create");setFormErr("");setFormName("");setFormPass("");}}
-              style={{background:"var(--accent)",border:"none",color:"#fff",borderRadius:10,padding:"0.55rem 1.1rem",fontWeight:700,cursor:"pointer",fontFamily:"'Clash Display',sans-serif",fontSize:"0.88rem"}}>
+              style={{background:"var(--p)",border:"none",color:"#fff",borderRadius:10,padding:"0.55rem 1.1rem",fontWeight:700,cursor:"pointer",fontFamily:"'Clash Display',sans-serif",fontSize:"0.88rem"}}>
               + Create Room
             </button>
             <button onClick={()=>{setView("join");setFormErr("");setFormCode("");setFormPass("");}}
@@ -1483,7 +1810,7 @@ function StudyRooms({ user, onToast }) {
       </div>
 
       {/* Public Rooms */}
-      <div style={{fontSize:"0.78rem",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.75rem"}}>Public Rooms</div>
+      <div style={{fontSize:"0.78rem",fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.6px",marginBottom:"0.75rem"}}>Public Rooms</div>
       <div className="grid-2">
         {PRESET_ROOMS.map(room => {
           const count = roomCounts[room.id] || 0;
@@ -1494,7 +1821,7 @@ function StudyRooms({ user, onToast }) {
                 <div className="room-name">{room.name}</div>
                 <div className="room-meta">📖 {room.subject} · ✨ {room.vibe}</div>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:"0.5rem"}}>
-                  <div style={{fontSize:"0.78rem",color:count>0?"var(--green)":"var(--muted)",fontWeight:count>0?600:400}}>
+                  <div style={{fontSize:"0.78rem",color:count>0?"var(--green)":"var(--t2)",fontWeight:count>0?600:400}}>
                     {count > 0 ? `🟢 ${count} studying now` : "⚪ Empty — be first!"}
                   </div>
                   <button className="btn btn-primary btn-sm" onClick={()=>doJoinRoom(room)}>Join →</button>
@@ -1519,10 +1846,10 @@ function StudyRooms({ user, onToast }) {
           <input placeholder="e.g. Harsh & Pari Study Session" value={formName} onChange={e=>setFormName(e.target.value)} />
         </div>
         <div className="form-group">
-          <label>Password <span style={{color:"var(--muted)",fontWeight:400,fontSize:"0.8rem"}}>(share this with your matches)</span></label>
+          <label>Password <span style={{color:"var(--t2)",fontWeight:400,fontSize:"0.8rem"}}>(share this with your matches)</span></label>
           <input type="password" placeholder="Choose a password (min 3 chars)" value={formPass} onChange={e=>setFormPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleCreate()} />
         </div>
-        <div style={{background:"var(--cream)",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",fontSize:"0.83rem",color:"var(--muted)"}}>
+        <div style={{background:"var(--panel)",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",fontSize:"0.83rem",color:"var(--t2)"}}>
           💡 After creating, you'll get a <strong>Room Code</strong>. Share both the code and password with your match so they can join.
         </div>
         <button className="btn btn-primary" style={{width:"100%"}} onClick={handleCreate}>Create & Enter Room</button>
@@ -1559,18 +1886,18 @@ function StudyRooms({ user, onToast }) {
         <button className="btn btn-outline btn-sm" onClick={leaveRoom}>← Leave</button>
         <div style={{flex:1,minWidth:0}}>
           <h2 style={{fontFamily:"'Clash Display',sans-serif",fontSize:"1.25rem",fontWeight:700}}>{activeRoom.emoji} {activeRoom.name}</h2>
-          <div style={{fontSize:"0.78rem",color:"var(--muted)",marginTop:"0.1rem"}}>{activeRoom.vibe}</div>
+          <div style={{fontSize:"0.78rem",color:"var(--t2)",marginTop:"0.1rem"}}>{activeRoom.vibe}</div>
           {activeRoom.isPrivate && (
             <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginTop:"0.4rem",alignItems:"center"}}>
               <span style={{background:"#312e81",color:"#a5b4fc",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.12rem"}}>CODE: {activeRoom.roomCode}</span>
-              <span style={{background:"rgba(232,80,10,0.12)",color:"var(--accent)",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",fontWeight:700}}>🔒 PRIVATE</span>
+              <span style={{background:"rgba(232,80,10,0.12)",color:"var(--p)",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",fontWeight:700}}>🔒 PRIVATE</span>
               <button onClick={()=>{navigator.clipboard?.writeText(`Room Code: ${activeRoom.roomCode}  Password: ${activeRoom.password}`); onToast("Invite copied! Share with your match 📋","success");}}
-                style={{background:"none",border:"1px solid var(--border)",color:"var(--muted)",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",cursor:"pointer"}}>📋 Copy invite</button>
+                style={{background:"none",border:"1px solid var(--line2)",color:"var(--t2)",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",cursor:"pointer"}}>📋 Copy invite</button>
             </div>
           )}
         </div>
         <button onClick={toggleMic}
-          style={{background:micOn?"#16a34a":"var(--accent)",border:"none",color:"#fff",borderRadius:12,padding:"0.5rem 1.1rem",fontWeight:700,cursor:"pointer",fontFamily:"'Clash Display',sans-serif",fontSize:"0.88rem",flexShrink:0}}>
+          style={{background:micOn?"#16a34a":"var(--p)",border:"none",color:"#fff",borderRadius:12,padding:"0.5rem 1.1rem",fontWeight:700,cursor:"pointer",fontFamily:"'Clash Display',sans-serif",fontSize:"0.88rem",flexShrink:0}}>
           {micOn ? "🎙️ Mic ON" : "🔇 Join Audio"}
         </button>
       </div>
@@ -1598,15 +1925,15 @@ function StudyRooms({ user, onToast }) {
 
             {/* Pomodoro */}
             <div style={{textAlign:"center",marginBottom:"1rem"}}>
-              <div style={{fontSize:"0.7rem",textTransform:"uppercase",letterSpacing:"1px",color:pomMode==="focus"?"var(--accent)":"#4ade80",marginBottom:"0.25rem",fontWeight:700}}>
+              <div style={{fontSize:"0.7rem",textTransform:"uppercase",letterSpacing:"1px",color:pomMode==="focus"?"var(--p)":"#4ade80",marginBottom:"0.25rem",fontWeight:700}}>
                 {pomMode==="focus" ? "🍅 Focus" : "☕ Break"}
               </div>
               <div className="room-timer-display">{fmt(pomSecs)}</div>
               <div style={{background:"rgba(255,255,255,0.1)",borderRadius:99,height:5,margin:"0.6rem auto",maxWidth:180}}>
-                <div style={{background:pomMode==="focus"?"var(--accent)":"#4ade80",borderRadius:99,height:"100%",width:`${pomPct}%`,transition:"width 1s linear"}} />
+                <div style={{background:pomMode==="focus"?"var(--p)":"#4ade80",borderRadius:99,height:"100%",width:`${pomPct}%`,transition:"width 1s linear"}} />
               </div>
               <div style={{display:"flex",gap:"0.4rem",justifyContent:"center"}}>
-                <button onClick={()=>setPomOn(p=>!p)} style={{background:pomOn?"#374151":"var(--accent)",border:"none",color:"#fff",borderRadius:10,padding:"0.45rem 1.3rem",fontWeight:700,cursor:"pointer",fontFamily:"'Clash Display',sans-serif"}}>
+                <button onClick={()=>setPomOn(p=>!p)} style={{background:pomOn?"#374151":"var(--p)",border:"none",color:"#fff",borderRadius:10,padding:"0.45rem 1.3rem",fontWeight:700,cursor:"pointer",fontFamily:"'Clash Display',sans-serif"}}>
                   {pomOn?"⏸ Pause":"▶ Start"}
                 </button>
                 <button onClick={()=>{setPomOn(false);setPomSecs(POM[pomMode]);}} style={{background:"rgba(255,255,255,0.1)",border:"none",color:"#fff",borderRadius:10,padding:"0.45rem 0.9rem",cursor:"pointer"}}>↺</button>
@@ -1631,7 +1958,7 @@ function StudyRooms({ user, onToast }) {
             <div style={{marginTop:"0.6rem",display:"flex",gap:"0.35rem",flexWrap:"wrap"}}>
               {LOFI_TRACKS.map((t,i)=>(
                 <div key={i} onClick={()=>{setTrackIdx(i);setPlaying(true);}}
-                  style={{cursor:"pointer",padding:"0.22rem 0.65rem",borderRadius:20,fontSize:"0.74rem",background:trackIdx===i?"var(--accent)":"rgba(255,255,255,0.08)",color:trackIdx===i?"#fff":"#aaa",fontWeight:trackIdx===i?600:400}}>
+                  style={{cursor:"pointer",padding:"0.22rem 0.65rem",borderRadius:20,fontSize:"0.74rem",background:trackIdx===i?"var(--p)":"rgba(255,255,255,0.08)",color:trackIdx===i?"#fff":"#aaa",fontWeight:trackIdx===i?600:400}}>
                   {t.emoji} {t.title}
                 </div>
               ))}
@@ -1640,23 +1967,23 @@ function StudyRooms({ user, onToast }) {
         </div>
 
         {/* Chat panel */}
-        <div style={{background:"var(--card)",borderRadius:18,border:"1px solid var(--border)",display:"flex",flexDirection:"column",height:500}}>
-          <div style={{padding:"0.8rem 1rem",borderBottom:"1px solid var(--border)",fontWeight:700,fontFamily:"'Clash Display',sans-serif",fontSize:"0.92rem"}}>💬 Room Chat</div>
+        <div style={{background:"var(--card)",borderRadius:18,border:"1px solid var(--line2)",display:"flex",flexDirection:"column",height:500}}>
+          <div style={{padding:"0.8rem 1rem",borderBottom:"1px solid var(--line2)",fontWeight:700,fontFamily:"'Clash Display',sans-serif",fontSize:"0.92rem"}}>💬 Room Chat</div>
           <div style={{flex:1,overflowY:"auto",padding:"0.7rem 0.9rem",display:"flex",flexDirection:"column",gap:"0.4rem"}}>
             {chat.map(m=>(
               <div key={m.id} style={{textAlign:m.sys?"center":m.mine?"right":"left"}}>
                 {m.sys
-                  ? <span style={{fontSize:"0.73rem",color:"var(--muted)",background:"var(--cream)",borderRadius:20,padding:"0.18rem 0.7rem"}}>{m.text}</span>
+                  ? <span style={{fontSize:"0.73rem",color:"var(--t2)",background:"var(--panel)",borderRadius:20,padding:"0.18rem 0.7rem"}}>{m.text}</span>
                   : <div>
-                      {!m.mine&&<div style={{fontSize:"0.68rem",color:"var(--muted)",marginBottom:"0.1rem"}}>{m.name}</div>}
-                      <span style={{background:m.mine?"var(--accent)":"var(--cream)",color:m.mine?"#fff":"var(--ink)",borderRadius:12,padding:"0.32rem 0.68rem",fontSize:"0.84rem",display:"inline-block",maxWidth:"90%",textAlign:"left"}}>{m.text}</span>
+                      {!m.mine&&<div style={{fontSize:"0.68rem",color:"var(--t2)",marginBottom:"0.1rem"}}>{m.name}</div>}
+                      <span style={{background:m.mine?"var(--pg)":"var(--rim)",color:m.mine?"#fff":"var(--base)",borderRadius:12,padding:"0.32rem 0.68rem",fontSize:"0.84rem",display:"inline-block",maxWidth:"90%",textAlign:"left"}}>{m.text}</span>
                     </div>
                 }
               </div>
             ))}
             <div ref={chatBottom} />
           </div>
-          <div style={{padding:"0.6rem",borderTop:"1px solid var(--border)",display:"flex",gap:"0.4rem"}}>
+          <div style={{padding:"0.6rem",borderTop:"1px solid var(--line2)",display:"flex",gap:"0.4rem"}}>
             <input value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()}
               placeholder="Chat..." className="chat-input" style={{flex:1,fontSize:"0.83rem"}} />
             <button className="chat-send" onClick={sendChat}>Send</button>
@@ -1740,15 +2067,15 @@ function AIAssistant({ user }) {
             <h2 style={{ fontFamily:"'Clash Display',sans-serif", fontSize:"1.35rem", fontWeight:700 }}>
               <span style={{ background:"linear-gradient(135deg,#7c3aed,#2563eb)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>✦ AI Study Assistant</span>
             </h2>
-            <p style={{ color:"var(--muted)", fontSize:"0.82rem", marginTop:"0.1rem" }}>Ask any academic question — I'll explain it clearly</p>
+            <p style={{ color:"var(--t2)", fontSize:"0.82rem", marginTop:"0.1rem" }}>Ask any academic question — I'll explain it clearly</p>
           </div>
           <div style={{ display:"flex", gap:"0.5rem", alignItems:"center" }}>
             <select value={subject} onChange={e=>setSubject(e.target.value)}
-              style={{ border:"1.5px solid var(--border)", borderRadius:8, padding:"0.4rem 0.7rem", fontSize:"0.82rem", background:"var(--cream)", outline:"none", fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>
+              style={{ border:"1.5px solid var(--line2)", borderRadius:8, padding:"0.4rem 0.7rem", fontSize:"0.82rem", background:"var(--panel)", outline:"none", fontFamily:"'Instrument Sans',sans-serif", cursor:"pointer" }}>
               {SUBJECTS.map(s => <option key={s}>{s}</option>)}
             </select>
             <button onClick={()=>setMsgs([{role:"assistant",content:"Chat cleared! What would you like to study? 📚"}])}
-              style={{ background:"none", border:"1.5px solid var(--border)", borderRadius:8, padding:"0.4rem 0.75rem", fontSize:"0.8rem", cursor:"pointer", color:"var(--muted)" }}>
+              style={{ background:"none", border:"1.5px solid var(--line2)", borderRadius:8, padding:"0.4rem 0.75rem", fontSize:"0.8rem", cursor:"pointer", color:"var(--t2)" }}>
               🗑 Clear
             </button>
           </div>
@@ -1802,8 +2129,8 @@ function MatchPopup({ match, onClose }) {
     <div style={{ position:"fixed", inset:0, background:"rgba(13,13,13,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
       <div style={{ background:"var(--card)", borderRadius:"24px", padding:"2.5rem", textAlign:"center", maxWidth:"340px", width:"100%", boxShadow:"var(--shadow-lg)" }}>
         <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>🎉</div>
-        <h2 style={{ color:"var(--accent)", marginBottom:"0.3rem" }}>It's a Match!</h2>
-        <p style={{ color:"var(--muted)", marginBottom:"1.5rem", fontSize:"0.9rem" }}>You and <strong>{match.name}</strong> liked each other!</p>
+        <h2 style={{ color:"var(--p)", marginBottom:"0.3rem" }}>It's a Match!</h2>
+        <p style={{ color:"var(--t2)", marginBottom:"1.5rem", fontSize:"0.9rem" }}>You and <strong>{match.name}</strong> liked each other!</p>
         <div style={{ display:"flex", gap:"0.5rem" }}>
           <button className="btn btn-outline btn-sm" style={{ flex:1 }} onClick={()=>onClose(false)}>Continue</button>
           <button className="btn btn-primary btn-sm" style={{ flex:1 }} onClick={()=>onClose(true)}>Message →</button>
@@ -1857,7 +2184,7 @@ export default function App() {
       <style>{style}</style>
       <div className="app">
         <nav className="nav">
-          <div className="nav-logo">Study<span>Buddy</span></div>
+          <div className="nav-logo"><div className="nav-logo-icon">✦</div>Study<span>Buddy</span></div>
           <div className="nav-tabs">
             {TABS.map(t => (
               <button key={t.id} className={`nav-tab ${tab===t.id?"active":""}`} onClick={()=>setTab(t.id)}>{t.label}</button>
