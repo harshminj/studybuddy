@@ -1549,7 +1549,7 @@ function AIAssistant({ user }) {
   const SUGGESTIONS = [
     "Explain Newton's laws of motion",
     "How does photosynthesis work?",
-    "Solve: 2x\u00b2 + 5x - 3 = 0",
+    "Solve: 2x² + 5x - 3 = 0",
     "Explain Big O notation with examples",
     "Difference between mitosis and meiosis",
     "Explain recursion with code",
@@ -1558,7 +1558,7 @@ function AIAssistant({ user }) {
   ];
   const SUBJECTS = ["General","Math","Science","History","CS/Coding","Physics","Chemistry","Literature","Economics"];
 
-  const [msgs, setMsgs]       = useState([{ role:"assistant", content:"Hi! I\u2019m your AI Study Assistant \ud83c\udf93\n\nAsk me anything \u2014 maths, science, history, coding, essays. I\u2019ll explain step by step, not just give answers!\n\nWhat are you studying today?" }]);
+  const [msgs, setMsgs]       = useState([{ role:"assistant", content:"Hi! I'm your AI Study Assistant 🎓\n\nAsk me anything — maths, science, history, coding, essays. I'll explain step by step, not just give answers!\n\nWhat are you studying today?" }]);
   const [input, setInput]     = useState("");
   const [loading, setLoading] = useState(false);
   const [subject, setSubject] = useState("General");
@@ -1600,7 +1600,7 @@ function AIAssistant({ user }) {
       const reply = data?.content || "Sorry, something went wrong. Please try again!";
       setMsgs(p => [...p, { role:"assistant", content:reply }]);
     } catch(e) {
-      setMsgs(p => [...p, { role:"assistant", content:"\u26a0\ufe0f " + (e.message||"Connection error — please try again.") }]);
+      setMsgs(p => [...p, { role:"assistant", content:"⚠️ " + (e.message||"Connection error — please try again.") }]);
     }
     setLoading(false);
   };
@@ -1615,18 +1615,18 @@ function AIAssistant({ user }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"0.75rem" }}>
           <div>
             <h2 style={{ fontFamily:"'Clash Display',sans-serif", fontSize:"1.35rem", fontWeight:700 }}>
-              <span style={{ background:"linear-gradient(135deg,#7c3aed,#2563eb)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>\u2726 AI Study Assistant</span>
+              <span style={{ background:"linear-gradient(135deg,#7c3aed,#2563eb)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>✦ AI Study Assistant</span>
             </h2>
-            <p style={{ color:"var(--muted)", fontSize:"0.82rem", marginTop:"0.1rem" }}>Ask any academic question \u2014 I\u2019ll explain it clearly</p>
+            <p style={{ color:"var(--muted)", fontSize:"0.82rem", marginTop:"0.1rem" }}>Ask any academic question — I'll explain it clearly</p>
           </div>
           <div style={{ display:"flex", gap:"0.5rem", alignItems:"center" }}>
             <select value={subject} onChange={e=>setSubject(e.target.value)}
               style={{ border:"1.5px solid var(--border)", borderRadius:8, padding:"0.4rem 0.7rem", fontSize:"0.82rem", background:"var(--cream)", outline:"none", fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>
               {SUBJECTS.map(s => <option key={s}>{s}</option>)}
             </select>
-            <button onClick={()=>setMsgs([{role:"assistant",content:"Chat cleared! What would you like to study? \ud83d\udcda"}])}
+            <button onClick={()=>setMsgs([{role:"assistant",content:"Chat cleared! What would you like to study? 📚"}])}
               style={{ background:"none", border:"1.5px solid var(--border)", borderRadius:8, padding:"0.4rem 0.75rem", fontSize:"0.8rem", cursor:"pointer", color:"var(--muted)" }}>
-              \ud83d\uddd1 Clear
+              🗑 Clear
             </button>
           </div>
         </div>
@@ -1644,14 +1644,14 @@ function AIAssistant({ user }) {
         {msgs.map((m,i) => (
           <div key={i} className={"ai-bubble-wrap " + m.role}>
             <div className="ai-avatar" style={{ background: m.role==="assistant" ? "linear-gradient(135deg,#7c3aed,#2563eb)" : userColor(user?.id), color:"#fff", fontSize: m.role==="assistant"?"1rem":"0.75rem" }}>
-              {m.role==="assistant" ? "\u2726" : (user?.initials||getInitials(user?.name||"U"))}
+              {m.role==="assistant" ? "✦" : (user?.initials||getInitials(user?.name||"U"))}
             </div>
             <div className={"ai-bubble " + m.role} dangerouslySetInnerHTML={{ __html: fmt(m.content) }} />
           </div>
         ))}
         {loading && (
           <div className="ai-bubble-wrap assistant">
-            <div className="ai-avatar" style={{ background:"linear-gradient(135deg,#7c3aed,#2563eb)", color:"#fff" }}>\u2726</div>
+            <div className="ai-avatar" style={{ background:"linear-gradient(135deg,#7c3aed,#2563eb)", color:"#fff" }}>✦</div>
             <div className="ai-bubble assistant">
               <div className="ai-typing"><div className="ai-dot"/><div className="ai-dot"/><div className="ai-dot"/></div>
             </div>
@@ -1666,7 +1666,7 @@ function AIAssistant({ user }) {
           onChange={onInput} onKeyDown={onKey}
           placeholder="Ask anything... (Shift+Enter for new line)" />
         <button className="ai-send" onClick={()=>send()} disabled={loading || !input.trim()}>
-          {loading ? "\u23f3" : "\u27a4"}
+          {loading ? "⏳" : "➤"}
         </button>
       </div>
     </div>
