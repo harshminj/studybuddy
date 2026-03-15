@@ -706,6 +706,14 @@ function Auth({ onLogin }) {
   const [studyStyle, setStudyStyle] = useState("");
   const [otpData,    setOtpData]    = useState(null);
 
+  // Forgot password flow
+  const [tab2,       setTab2]       = useState("login"); // login | forgot
+  const [fpStep,     setFpStep]     = useState(1); // 1=email, 2=otp, 3=newpass
+  const [fpEmail,    setFpEmail]    = useState("");
+  const [fpOtp,      setFpOtp]      = useState("");
+  const [fpNewPass,  setFpNewPass]  = useState("");
+  const [fpConfPass, setFpConfPass] = useState("");
+
   const [customStyle, setCustomStyle] = useState("");
   const [customSubject, setCustomSubject] = useState("");
   const toggleSubject = (s) => setSubjects(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
@@ -776,7 +784,51 @@ function Auth({ onLogin }) {
     setLoading(false);
   };
 
-  const switchTab = (t) => { setTab(t); setStep(1); setError(""); };
+  const switchTab = (t) => { setTab(t); setStep(1); setError(""); setTab2("login"); setFpStep(1); };
+
+  // ── Forgot password handlers ──────────────────────────────────────────
+  const doFpSendOtp = async () => {
+    setError(""); setLoading(true);
+    try {
+      const data = await apiFetch("/auth/send-otp", { method: "POST", body: { email: fpEmail } });
+      // Send OTP via EmailJS
+      try {
+        await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            service_id: EMAILJS_SERVICE, template_id: EMAILJS_TEMPLATE, user_id: EMAILJS_KEY,
+            template_params: { to_email: fpEmail, otp: String(data.otp) }
+          })
+        });
+      } catch {}
+      setFpStep(2);
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const doFpVerifyOtp = async () => {
+    setError(""); setLoading(true);
+    try {
+      await apiFetch("/auth/verify-otp", { method: "POST", body: { email: fpEmail, otp: fpOtp } });
+      setFpStep(3);
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const doFpResetPass = async () => {
+    if (fpNewPass !== fpConfPass) { setError("Passwords don't match"); return; }
+    if (fpNewPass.length < 6) { setError("Password must be at least 6 characters"); return; }
+    setError(""); setLoading(true);
+    try {
+      await apiFetch("/auth/reset-password", { method: "POST", body: { email: fpEmail, otp: fpOtp, newPassword: fpNewPass } });
+      setTab2("login"); setFpStep(1); setFpEmail(""); setFpOtp(""); setFpNewPass(""); setFpConfPass("");
+      setError(""); 
+      // Show success in login tab
+      setTab("login");
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  };
 
   return (
     <div className="auth-wrapper">
@@ -792,12 +844,77 @@ function Auth({ onLogin }) {
 
         {error && <div className="err-msg">⚠ {error}</div>}
 
-        {tab === "login" && (
+        {tab === "login" && tab2 === "login" && (
           <>
             <div className="form-group"><label>Email</label><input type="email" placeholder="you@college.edu" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} /></div>
             <div className="form-group"><label>Password</label><input type="password" placeholder="••••••••" value={loginPass} onChange={e => setLoginPass(e.target.value)} onKeyDown={e => e.key === "Enter" && doLogin()} /></div>
             <button className="btn btn-primary" onClick={doLogin} disabled={loading}>{loading ? "Logging in..." : "Login →"}</button>
-            <p className="auth-switch">No account? <a onClick={() => switchTab("signup")}>Sign Up</a></p>
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:"0.75rem" }}>
+              <p className="auth-switch" style={{ margin:0 }}>No account? <a onClick={() => switchTab("signup")}>Sign Up</a></p>
+              <p className="auth-switch" style={{ margin:0 }}><a onClick={() => { setTab2("forgot"); setFpStep(1); setError(""); }}>Forgot password?</a></p>
+            </div>
+          </>
+        )}
+
+        {/* ── Forgot Password Flow ── */}
+        {tab === "login" && tab2 === "forgot" && (
+          <>
+            {/* Step indicator */}
+            <div className="step-indicator">
+              {[1,2,3].map(s => <div key={s} className={`step-dot ${fpStep >= s ? "active" : ""}`} />)}
+            </div>
+
+            {fpStep === 1 && (
+              <>
+                <p style={{ textAlign:"center", color:"var(--t2)", fontSize:"0.85rem", marginBottom:"1rem" }}>
+                  Enter your email — we'll send a reset code
+                </p>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input type="email" placeholder="you@college.edu" value={fpEmail} onChange={e => setFpEmail(e.target.value)} onKeyDown={e => e.key==="Enter" && doFpSendOtp()} />
+                </div>
+                <button className="btn btn-primary" onClick={doFpSendOtp} disabled={loading || !fpEmail}>
+                  {loading ? "Sending..." : "Send Reset Code →"}
+                </button>
+                <p className="auth-switch"><a onClick={() => { setTab2("login"); setError(""); }}>← Back to Login</a></p>
+              </>
+            )}
+
+            {fpStep === 2 && (
+              <>
+                <p style={{ textAlign:"center", color:"var(--t2)", fontSize:"0.85rem", marginBottom:"1rem" }}>
+                  Enter the 5-digit code sent to <strong>{fpEmail}</strong>
+                </p>
+                <div className="form-group">
+                  <input className="otp-input" type="text" inputMode="numeric" pattern="[0-9]*"
+                    maxLength={5} placeholder="- - - - -" value={fpOtp} autoFocus
+                    onChange={e => setFpOtp(e.target.value.replace(/[^0-9]/g,"").slice(0,5))} />
+                </div>
+                <button className="btn btn-primary" onClick={doFpVerifyOtp} disabled={loading || fpOtp.length < 5}>
+                  {loading ? "Verifying..." : "Verify Code →"}
+                </button>
+                <p className="auth-switch"><a onClick={doFpSendOtp}>Resend code</a></p>
+              </>
+            )}
+
+            {fpStep === 3 && (
+              <>
+                <p style={{ textAlign:"center", color:"var(--t2)", fontSize:"0.85rem", marginBottom:"1rem" }}>
+                  Set your new password
+                </p>
+                <div className="form-group">
+                  <label>New Password</label>
+                  <input type="password" placeholder="Min. 6 characters" value={fpNewPass} onChange={e => setFpNewPass(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Confirm Password</label>
+                  <input type="password" placeholder="Repeat password" value={fpConfPass} onChange={e => setFpConfPass(e.target.value)} onKeyDown={e => e.key==="Enter" && doFpResetPass()} />
+                </div>
+                <button className="btn btn-primary" onClick={doFpResetPass} disabled={loading || !fpNewPass || !fpConfPass}>
+                  {loading ? "Saving..." : "Reset Password ✓"}
+                </button>
+              </>
+            )}
           </>
         )}
 
