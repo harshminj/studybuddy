@@ -1608,7 +1608,7 @@ function Admin({ onToast }) {
 
   const statCards = [
     { label:"Total Users",    num:stats?.totalUsers    || 0, icon:"👥" },
-    { label:"Total Matches",  num:stats?.totalMatches  || 0, icon:"💞" },
+    { label:"Total Matches",  num:stats?.totalMatches  || 0, icon:"🤝" },
     { label:"Total Messages", num:stats?.totalMessages || 0, icon:"💬" },
     { label:"Today's Signups",num:stats?.todaySignups  || 0, icon:"🆕" },
   ];
