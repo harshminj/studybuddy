@@ -1029,7 +1029,7 @@ function Discover({ user, onMatch, onToast }) {
       const res = await apiFetch(`/like/${targetId}`, { method: "POST" });
       setUsers(p => p.filter(u => u.id !== targetId));
       if (res.matched) onMatch({ id: targetId, name: targetName });
-      else onToast(`You liked ${targetName}!`, "success");
+      else onToast(`Study request sent to ${targetName}!`, "success");
     } catch (e) { onToast(e.message, "error"); }
     setLiking(null);
   };
@@ -1083,9 +1083,8 @@ function Discover({ user, onMatch, onToast }) {
                     {(Array.isArray(u.subjects) ? u.subjects : []).slice(0,3).map(s => <span key={s} className="tag tag-subject">{s}</span>)}
                   </div>
                   <div className="card-actions">
-                    <button className="btn-pass" onClick={() => pass(u.id)}>Pass</button>
                     <button className="btn-like" onClick={() => like(u.id, u.name)} disabled={liking === u.id}>
-                      {liking === u.id ? "..." : "❤ Like"}
+                      {liking === u.id ? "..." : "✦ Connect"}
                     </button>
                   </div>
                 </div>
@@ -1436,7 +1435,7 @@ function StudyTools({ onToast }) {
     { id:"focus55",  label:"🔥 Focus 55m",  secs:55*60,  type:"focus" },
     { id:"focus99",  label:"⚡ Focus 99m",  secs:99*60,  type:"focus" },
     { id:"break5",   label:"☕ Break 5m",   secs:5*60,   type:"break" },
-    { id:"break15",  label:"🌿 Break 15m",  secs:15*60,  type:"break" },
+    { id:"break15",  label:"Break 15m",  secs:15*60,  type:"break" },
   ];
   const [modeId, setModeId] = useState("focus25");
   const [secs, setSecs] = useState(25*60);
@@ -1813,7 +1812,9 @@ async function spSearch(q, token) {
   const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track,album,playlist&limit=8`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || `Spotify error ${res.status}`);
+  return data;
 }
 
 // Spotify Player component
@@ -1937,9 +1938,33 @@ function SpotifyPlayer({ onToast }) {
     if (!query.trim()) return;
     setSearching(true);
     try {
-      const data = await spSearch(query, token);
+      // Try to refresh token if close to expiry
+      const exp = Number(sessionStorage.getItem("sp_expires") || 0);
+      let activeToken = token;
+      if (Date.now() > exp - 60000) {
+        const refresh = sessionStorage.getItem("sp_refresh");
+        if (refresh) {
+          try {
+            const d = await spRefreshToken(refresh);
+            if (d.access_token) {
+              sessionStorage.setItem("sp_token", d.access_token);
+              sessionStorage.setItem("sp_expires", String(Date.now() + d.expires_in * 1000));
+              setToken(d.access_token);
+              activeToken = d.access_token;
+            }
+          } catch {}
+        }
+      }
+      const data = await spSearch(query, activeToken);
       setResults(data);
-    } catch { onToast("Search failed", "error"); }
+    } catch(e) {
+      onToast(e.message || "Search failed", "error");
+      // If 401, token is invalid — force re-login
+      if (e.message?.includes("401") || e.message?.includes("token")) {
+        sessionStorage.removeItem("sp_token");
+        setToken("");
+      }
+    }
     setSearching(false);
   }
 
@@ -2778,9 +2803,9 @@ function MatchPopup({ match, onClose }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(13,13,13,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
       <div style={{ background:"var(--card)", borderRadius:"24px", padding:"2.5rem", textAlign:"center", maxWidth:"340px", width:"100%", boxShadow:"var(--shadow-lg)" }}>
-        <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>🎉</div>
-        <h2 style={{ color:"var(--p)", marginBottom:"0.3rem" }}>It's a Match!</h2>
-        <p style={{ color:"var(--t2)", marginBottom:"1.5rem", fontSize:"0.9rem" }}>You and <strong>{match.name}</strong> liked each other!</p>
+        <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>🤝</div>
+        <h2 style={{ color:"var(--p)", marginBottom:"0.3rem" }}>Friends Connected!</h2>
+        <p style={{ color:"var(--t2)", marginBottom:"1.5rem", fontSize:"0.9rem" }}>You and <strong>{match.name}</strong> can study together!</p>
         <div style={{ display:"flex", gap:"0.5rem" }}>
           <button className="btn btn-outline btn-sm" style={{ flex:1 }} onClick={()=>onClose(false)}>Continue</button>
           <button className="btn btn-primary btn-sm" style={{ flex:1 }} onClick={()=>onClose(true)}>Message →</button>
