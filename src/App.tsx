@@ -171,7 +171,7 @@ const style = `
   }
   .avatar:hover { border-color:var(--p2); }
   .avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-  .profile-card-avatar img,.match-avatar img,.profile-hero-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .profile-card-avatar img,.connect-avatar img,.profile-hero-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
   .pic-upload-wrap { position:relative; display:inline-block; cursor:pointer; }
   .pic-upload-wrap:hover .pic-overlay { opacity:1; }
   .pic-overlay { position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.6rem; font-weight:700; opacity:0; transition:opacity 0.2s; text-align:center; }
@@ -339,15 +339,15 @@ const style = `
     font-family:'Instrument Sans',sans-serif;
   }
   .btn-pass:hover { background:var(--panel); color:var(--t1); border-color:var(--line3); }
-  .btn-like {
+  .btn-connect {
     flex:1; padding:0.45rem; border-radius:var(--r-sm); border:none;
     background:var(--pg); color:#fff; font-weight:700;
     cursor:pointer; font-size:0.8rem; transition:all 0.18s;
     font-family:'Bricolage Grotesque',sans-serif;
     box-shadow:0 0 12px var(--glow);
   }
-  .btn-like:hover { transform:scale(1.04); box-shadow:0 0 20px var(--glow); }
-  .btn-like:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+  .btn-connect:hover { transform:scale(1.04); box-shadow:0 0 20px var(--glow); }
+  .btn-connect:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
 
   /* ─── MESSAGES ───────────────────────────────────────────── */
   .chat-layout { display:flex; height:calc(100vh - 130px); gap:1rem; }
@@ -356,7 +356,7 @@ const style = `
   .chat-item { display:flex; align-items:center; gap:0.7rem; padding:0.8rem 1.1rem; cursor:pointer; transition:background 0.14s; border-bottom:1px solid var(--line); }
   .chat-item:hover { background:var(--panel); }
   .chat-item.active { background:rgba(124,108,255,0.1); border-left:2px solid var(--p); }
-  .match-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:0.9rem; flex-shrink:0; overflow:hidden; }
+  .connect-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:0.9rem; flex-shrink:0; overflow:hidden; }
   .chat-item-info { flex:1; min-width:0; }
   .chat-item-name { font-weight:600; font-size:0.85rem; color:var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .chat-item-preview { font-size:0.73rem; color:var(--t3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:0.1rem; }
@@ -456,7 +456,7 @@ const style = `
     max-width:310px; border:1px solid var(--line2);
   }
   .toast.success { border-left:3px solid var(--ok); }
-  .toast.match   { border-left:3px solid var(--p2); box-shadow:var(--sh-lg), 0 0 20px rgba(124,108,255,0.2); }
+  .toast.connect   { border-left:3px solid var(--p2); box-shadow:var(--sh-lg), 0 0 20px rgba(124,108,255,0.2); }
   .toast.error   { border-left:3px solid var(--err); }
   @keyframes slideup { from { transform:translateY(16px) scale(0.96); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
 
@@ -1005,7 +1005,7 @@ function Auth({ onLogin }) {
 function Discover({ user, onMatch, onToast }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [liking, setLiking] = useState(null);
+  const [connecting, setConnecting] = useState(null);
   const [styleFilter, setStyleFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
 
@@ -1023,15 +1023,15 @@ function Discover({ user, onMatch, onToast }) {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const like = async (targetId, targetName) => {
-    setLiking(targetId);
+  const doConnect = async (targetId, targetName) => {
+    setConnecting(targetId);
     try {
-      const res = await apiFetch(`/like/${targetId}`, { method: "POST" });
+      const res = await apiFetch(`/connect/${targetId}`, { method: "POST" });
       setUsers(p => p.filter(u => u.id !== targetId));
-      if (res.matched) onMatch({ id: targetId, name: targetName });
-      else onToast(`Study request sent to ${targetName}!`, "success");
+      if (res.connected) onMatch({ id: targetId, name: targetName });
+      else onToast(`Connect request sent to ${targetName}!`, "success");
     } catch (e) { onToast(e.message, "error"); }
-    setLiking(null);
+    setConnecting(null);
   };
 
   const pass = (targetId) => setUsers(p => p.filter(u => u.id !== targetId));
@@ -1083,8 +1083,8 @@ function Discover({ user, onMatch, onToast }) {
                     {(Array.isArray(u.subjects) ? u.subjects : []).slice(0,3).map(s => <span key={s} className="tag tag-subject">{s}</span>)}
                   </div>
                   <div className="card-actions">
-                    <button className="btn-like" onClick={() => like(u.id, u.name)} disabled={liking === u.id}>
-                      {liking === u.id ? "..." : "✦ Connect"}
+                    <button className="btn-connect" onClick={() => doConnect(u.id, u.name)} disabled={connecting === u.id}>
+                      {connecting === u.id ? "..." : "✦ Connect"}
                     </button>
                   </div>
                 </div>
@@ -1099,7 +1099,7 @@ function Discover({ user, onMatch, onToast }) {
 
 
 function Messages({ user, onToast }) {
-  const [matches, setMatches] = useState([]);
+  const [connects, setConnects] = useState([]);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -1113,7 +1113,7 @@ function Messages({ user, onToast }) {
       setLoading(true);
       try {
         const data = await apiFetch("/matches");
-        setMatches(data);
+        setConnects(data);
         if (data.length > 0) setActive(data[0]);
       } catch (e) { onToast(e.message, "error"); }
       setLoading(false);
@@ -1146,7 +1146,7 @@ function Messages({ user, onToast }) {
     try {
       const msg = await apiFetch(`/messages/${active.match_id}`, { method: "POST", body: { text } });
       setMessages(p => [...p, msg]);
-      setMatches(p => p.map(m => m.match_id === active.match_id ? { ...m, last_message: text } : m));
+      setConnects(p => p.map(m => m.match_id === active.match_id ? { ...m, last_message: text } : m));
     } catch (e) { onToast(e.message, "error"); setInput(text); }
     setSending(false);
   };
@@ -1154,18 +1154,18 @@ function Messages({ user, onToast }) {
   return (
     <div>
       <h2 className="page-title">Messages</h2>
-      <p className="page-sub">Chat with your study matches</p>
+      <p className="page-sub">Chat with your study connections</p>
       <div className="chat-layout">
         <div className="chat-sidebar">
           {loading && <div className="loading"><div className="spinner" /></div>}
-          {!loading && matches.length === 0 && (
+          {!loading && connects.length === 0 && (
             <div className="card" style={{ textAlign:"center", color:"var(--t2)", padding:"2rem", fontSize:"0.9rem" }}>
-              No matches yet. Start discovering! 🔍
+              No connections yet. Start discovering! 🔍
             </div>
           )}
-          {matches.map(m => (
+          {connects.map(m => (
             <div key={m.match_id} className={`chat-item ${active?.match_id === m.match_id ? "active" : ""}`} onClick={() => setActive(m)}>
-              <div className="match-avatar" style={{ background:userColor(m.id) }}>{m.photo ? <img src={m.photo} alt={m.name} /> : (m.initials || getInitials(m.name))}</div>
+              <div className="connect-avatar" style={{ background:userColor(m.id) }}>{m.photo ? <img src={m.photo} alt={m.name} /> : (m.initials || getInitials(m.name))}</div>
               <div className="chat-item-info">
                 <div className="chat-item-name">{m.name}</div>
                 <div className="chat-item-preview">{m.last_message || "Say hi! 👋"}</div>
@@ -1176,11 +1176,11 @@ function Messages({ user, onToast }) {
         </div>
         <div className="chat-main">
           {!active ? (
-            <div className="chat-empty"><div style={{ fontSize:"2rem" }}>💬</div><div>Select a match to chat</div></div>
+            <div className="chat-empty"><div style={{ fontSize:"2rem" }}>💬</div><div>Select a connection to chat</div></div>
           ) : (
             <>
               <div className="chat-header">
-                <div className="match-avatar" style={{ background:userColor(active.id), width:38, height:38, fontSize:"0.85rem" }}>
+                <div className="connect-avatar" style={{ background:userColor(active.id), width:38, height:38, fontSize:"0.85rem" }}>
                   {active.photo ? <img src={active.photo} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}} /> : (active.initials || getInitials(active.name))}
                 </div>
                 <div style={{ flex:1 }}>
@@ -1368,7 +1368,7 @@ function Profile({ user, setUser, onToast }) {
 
 // Embedded Rating inside Profile
 function RatingInProfile({ user, onToast }) {
-  const [matches, setMatches] = useState([]);
+  const [connects, setConnects] = useState([]);
   const [selected, setSelected] = useState("");
   const [ratings, setRatings] = useState({ punctuality:0, helpfulness:0, focus:0 });
   const [feedback, setFeedback] = useState("");
@@ -1377,7 +1377,7 @@ function RatingInProfile({ user, onToast }) {
   const [submitting, setSubmitting] = useState(false);
   useEffect(() => {
     (async () => {
-      try { const d = await apiFetch("/matches"); if(Array.isArray(d)){ setMatches(d); if(d.length>0) setSelected(String(d[0].id)); } }
+      try { const d = await apiFetch("/matches"); if(Array.isArray(d)){ setConnects(d); if(d.length>0) setSelected(String(d[0].id)); } }
       catch {} setLoading(false);
     })();
   }, []);
@@ -1396,14 +1396,14 @@ function RatingInProfile({ user, onToast }) {
     </div>
   );
   if (loading) return <div className="loading"><div className="spinner"/></div>;
-  if (!matches.length) return <div className="card" style={{ textAlign:"center", padding:"2rem", color:"var(--t2)" }}><div style={{ fontSize:"2rem", marginBottom:"0.75rem" }}>🤝</div>Get some matches first to rate them!</div>;
+  if (!connects.length) return <div className="card" style={{ textAlign:"center", padding:"2rem", color:"var(--t2)" }}><div style={{ fontSize:"2rem", marginBottom:"0.75rem" }}>🤝</div>Get some matches first to rate them!</div>;
   return (
     <div className="card" style={{ maxWidth:500 }}>
       <h3 style={{ marginBottom:"1rem" }}>⭐ Rate a Study Partner</h3>
       <div className="form-group">
         <label>Select Partner</label>
         <select value={selected} onChange={e=>{ setSelected(e.target.value); setSubmitted(false); setRatings({punctuality:0,helpfulness:0,focus:0}); }}>
-          {matches.map(m=><option key={m.match_id} value={m.id}>{m.name}</option>)}
+          {connects.map(m=><option key={m.match_id} value={m.id}>{m.name}</option>)}
         </select>
       </div>
       {!submitted ? (
@@ -1516,7 +1516,7 @@ function StudyTools({ onToast }) {
 }
 
 function Rating({ user, onToast }) {
-  const [matches, setMatches] = useState([]);
+  const [connects, setConnects] = useState([]);
   const [selected, setSelected] = useState("");
   const [ratings, setRatings] = useState({ punctuality:0, helpfulness:0, focus:0 });
   const [feedback, setFeedback] = useState("");
@@ -1525,7 +1525,7 @@ function Rating({ user, onToast }) {
   const [submitting, setSubmitting] = useState(false);
   useEffect(() => {
     (async () => {
-      try { const d = await apiFetch("/matches"); if(Array.isArray(d)){ setMatches(d); if(d.length>0) setSelected(String(d[0].id)); } }
+      try { const d = await apiFetch("/matches"); if(Array.isArray(d)){ setConnects(d); if(d.length>0) setSelected(String(d[0].id)); } }
       catch {}
       setLoading(false);
     })();
@@ -1547,7 +1547,7 @@ function Rating({ user, onToast }) {
     </div>
   );
   if (loading) return <div className="loading"><div className="spinner"/></div>;
-  if (!matches.length) return <div><h2 className="page-title">Rate Your Partner</h2><p className="page-sub">Get some matches first!</p></div>;
+  if (!connects.length) return <div><h2 className="page-title">Rate Your Partner</h2><p className="page-sub">Get some connections first!</p></div>;
   return (
     <div>
       <h2 className="page-title">Rate Your Partner</h2>
@@ -1556,7 +1556,7 @@ function Rating({ user, onToast }) {
         <div className="form-group">
           <label>Select Study Partner</label>
           <select value={selected} onChange={e=>{ setSelected(e.target.value); setSubmitted(false); setRatings({punctuality:0,helpfulness:0,focus:0}); }}>
-            {matches.map(m=><option key={m.match_id} value={m.id}>{m.name}</option>)}
+            {connects.map(m=><option key={m.match_id} value={m.id}>{m.name}</option>)}
           </select>
         </div>
         {!submitted ? (
@@ -1608,7 +1608,7 @@ function Admin({ onToast }) {
 
   const statCards = [
     { label:"Total Users",    num:stats?.totalUsers    || 0, icon:"👥" },
-    { label:"Total Matches",  num:stats?.totalMatches  || 0, icon:"🤝" },
+    { label:"Total Connections",  num:stats?.totalConnects || 0, icon:"🤝" },
     { label:"Total Messages", num:stats?.totalMessages || 0, icon:"💬" },
     { label:"Today's Signups",num:stats?.todaySignups  || 0, icon:"🆕" },
   ];
@@ -1675,13 +1675,13 @@ function Admin({ onToast }) {
 
 
 function Friends({ user, onToast, onMessage }) {
-  const [matches, setMatches] = useState([]);
+  const [connects, setConnects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     apiFetch("/matches").then(data => {
-      if (Array.isArray(data)) setMatches(data);
+      if (Array.isArray(data)) setConnects(data);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -1691,18 +1691,18 @@ function Friends({ user, onToast, onMessage }) {
   return (
     <div>
       <h2 className="page-title">👫 Friends</h2>
-      <p className="page-sub">Your study partners — tap a card to see full profile</p>
+      <p className="page-sub">Your study connections — tap a card to see full profile</p>
 
-      {matches.length === 0 && (
+      {connects.length === 0 && (
         <div className="card" style={{ textAlign:"center", padding:"3rem", color:"var(--t2)" }}>
           <div style={{ fontSize:"3rem", marginBottom:"1rem" }}>🤝</div>
           <div style={{ fontWeight:600, marginBottom:"0.5rem" }}>No friends yet!</div>
-          <div style={{ fontSize:"0.9rem" }}>Start liking people in Discover to get matches</div>
+          <div style={{ fontSize:"0.9rem" }}>Connect with people in Discover to get connections</div>
         </div>
       )}
 
       <div className="grid-2">
-        {matches.map(m => {
+        {connects.map(m => {
           const isOpen = expanded === m.match_id;
           return (
             <div key={m.match_id} className="card" style={{ padding:0, overflow:"hidden" }}>
@@ -2454,7 +2454,7 @@ function StudyRooms({ user, onToast }) {
     if (formPass.length < 3) { setFormErr("Password must be at least 3 characters"); return; }
     const code = genCode();
     const room = { id:`priv_${code}`, name:formName.trim(), emoji:"🔒", bg:"linear-gradient(135deg,#1e1b4b,#4c1d95)", subject:"Private", vibe:`Private · Code: ${code}`, isPrivate:true, roomCode:code, password:formPass.trim() };
-    onToast(`Room created! Code: ${code} · Share it with your matches 🎉`,"success");
+    onToast(`Room created! Code: ${code} · Share it with your connections 🎉`,"success");
     doJoinRoom(room);
   };
 
@@ -2480,14 +2480,14 @@ function StudyRooms({ user, onToast }) {
   if (view === "list") return (
     <div>
       <h2 className="page-title">🎧 Study Rooms</h2>
-      <p className="page-sub">Join a public room or create a private room for your matches</p>
+      <p className="page-sub">Join a public room or create a private room for your connections</p>
 
       {/* Private Room Banner */}
       <div className="card" style={{marginBottom:"1.5rem",background:"linear-gradient(135deg,#1e1b4b,#4c1d95)",border:"none",color:"#fff"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"1rem"}}>
           <div>
             <div style={{fontFamily:"'Clash Display',sans-serif",fontSize:"1.1rem",fontWeight:700,marginBottom:"0.25rem"}}>🔒 Private Rooms</div>
-            <div style={{fontSize:"0.82rem",color:"rgba(255,255,255,0.65)"}}>Create a room → get a code + password → share with your matches to join</div>
+            <div style={{fontSize:"0.82rem",color:"rgba(255,255,255,0.65)"}}>Create a room → get a code + password → share with your connections to join</div>
           </div>
           <div style={{display:"flex",gap:"0.6rem"}}>
             <button onClick={()=>{setView("create");setFormErr("");setFormName("");setFormPass("");}}
@@ -2539,11 +2539,11 @@ function StudyRooms({ user, onToast }) {
           <input placeholder="e.g. Harsh & Pari Study Session" value={formName} onChange={e=>setFormName(e.target.value)} />
         </div>
         <div className="form-group">
-          <label>Password <span style={{color:"var(--t2)",fontWeight:400,fontSize:"0.8rem"}}>(share this with your matches)</span></label>
+          <label>Password <span style={{color:"var(--t2)",fontWeight:400,fontSize:"0.8rem"}}>(share this with your connections)</span></label>
           <input type="password" placeholder="Choose a password (min 3 chars)" value={formPass} onChange={e=>setFormPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleCreate()} />
         </div>
         <div style={{background:"var(--panel)",borderRadius:10,padding:"0.75rem 1rem",marginBottom:"1rem",fontSize:"0.83rem",color:"var(--t2)"}}>
-          💡 After creating, you'll get a <strong>Room Code</strong>. Share both the code and password with your match so they can join.
+          💡 After creating, you'll get a <strong>Room Code</strong>. Share both the code and password with your connection so they can join.
         </div>
         <button className="btn btn-primary" style={{width:"100%"}} onClick={handleCreate}>Create & Enter Room</button>
       </div>
@@ -2584,7 +2584,7 @@ function StudyRooms({ user, onToast }) {
             <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",marginTop:"0.4rem",alignItems:"center"}}>
               <span style={{background:"#312e81",color:"#a5b4fc",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",fontWeight:700,letterSpacing:"0.12rem"}}>CODE: {activeRoom.roomCode}</span>
               <span style={{background:"rgba(232,80,10,0.12)",color:"var(--p)",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",fontWeight:700}}>🔒 PRIVATE</span>
-              <button onClick={()=>{navigator.clipboard?.writeText(`Room Code: ${activeRoom.roomCode}  Password: ${activeRoom.password}`); onToast("Invite copied! Share with your match 📋","success");}}
+              <button onClick={()=>{navigator.clipboard?.writeText(`Room Code: ${activeRoom.roomCode}  Password: ${activeRoom.password}`); onToast("Invite copied! Share with your connection 📋","success");}}
                 style={{background:"none",border:"1px solid var(--line2)",color:"var(--t2)",borderRadius:8,padding:"0.15rem 0.65rem",fontSize:"0.72rem",cursor:"pointer"}}>📋 Copy invite</button>
             </div>
           )}
