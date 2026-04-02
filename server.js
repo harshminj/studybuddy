@@ -38,7 +38,7 @@ const UserSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false },
 }, { timestamps: true });
 
-const LikeSchema = new mongoose.Schema({
+const ConnectSchema = new mongoose.Schema({
   fromId: mongoose.Schema.Types.ObjectId,
   toId: mongoose.Schema.Types.ObjectId,
 }, { timestamps: true });
@@ -64,7 +64,7 @@ const RatingSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const User = mongoose.model("User", UserSchema);
-const Like = mongoose.model("Like", LikeSchema);
+const Connect = mongoose.model("Connect", ConnectSchema);
 const Match = mongoose.model("Match", MatchSchema);
 const Message = mongoose.model("Message", MessageSchema);
 const Rating = mongoose.model("Rating", RatingSchema);
@@ -127,7 +127,7 @@ const safeUser = (u) => u ? ({
   is_admin: u.isAdmin,
 }) : null;
 
-const getMatch = async (u1, u2) => Match.findOne({
+const getConnect = async (u1, u2) => Connect.findOne({
   $or: [
     { user1Id: u1, user2Id: u2 },
     { user1Id: u2, user2Id: u1 }
@@ -242,11 +242,11 @@ app.get("/api/discover", auth, async (req, res) => {
   const { style, subject } = req.query;
   const myId = new mongoose.Types.ObjectId(req.user.id);
 
-  // Only exclude people already liked (not matched)
-  const likedIds = (await Like.find({ fromId: myId })).map(l => l.toId);
+  // Only exclude people already connected (not matched)
+  const connectedIds = (await Connect.find({ fromId: myId })).map(c => c.toId);
 
   let query = {
-    _id: { $ne: myId, $nin: likedIds },
+    _id: { $ne: myId, $nin: connectedIds },
     name: { $exists: true, $ne: null },
     verified: true,
     isAdmin: { $ne: true },
@@ -259,32 +259,32 @@ app.get("/api/discover", auth, async (req, res) => {
 });
 
 // ============================================================
-// LIKE — mutual like = match, but profiles stay visible
+// CONNECT — mutual connect = match, profiles stay visible
 // ============================================================
-app.post("/api/like/:targetId", auth, async (req, res) => {
+app.post("/api/connect/:targetId", auth, async (req, res) => {
   const myId = new mongoose.Types.ObjectId(req.user.id);
   const targetId = new mongoose.Types.ObjectId(req.params.targetId);
 
-  if (myId.equals(targetId)) return res.status(400).json({ error: "Cannot like yourself" });
+  if (myId.equals(targetId)) return res.status(400).json({ error: "Cannot connect with yourself" });
 
-  const alreadyLiked = await Like.findOne({ fromId: myId, toId: targetId });
-  if (alreadyLiked) return res.status(400).json({ error: "Already liked" });
+  const alreadyConnected = await Connect.findOne({ fromId: myId, toId: targetId });
+  if (alreadyConnected) return res.status(400).json({ error: "Already connected" });
 
-  await Like.create({ fromId: myId, toId: targetId });
+  await Connect.create({ fromId: myId, toId: targetId });
 
-  const theyLikedMe = await Like.findOne({ fromId: targetId, toId: myId });
-  const existingMatch = await getMatch(myId, targetId);
+  const theyConnectedMe = await Connect.findOne({ fromId: targetId, toId: myId });
+  const existingConnect = await getConnect(myId, targetId);
 
-  if (theyLikedMe && !existingMatch) {
-    const match = await Match.create({ user1Id: myId, user2Id: targetId });
+  if (theyConnectedMe && !existingConnect) {
+    const connect = await Connect.create({ user1Id: myId, user2Id: targetId });
     const myUser = await User.findById(myId);
     const theirUser = await User.findById(targetId);
     io.to(`user_${targetId}`).emit("new_match", { matchId: match._id, withUser: safeUser(myUser) });
     io.to(`user_${myId}`).emit("new_match", { matchId: match._id, withUser: safeUser(theirUser) });
-    return res.json({ liked: true, matched: true, matchId: match._id });
+    return res.json({ connected: true, matched: true, matchId: match._id });
   }
 
-  res.json({ liked: true, matched: false });
+  res.json({ connected: true, matched: false });
 });
 
 // ============================================================
@@ -292,11 +292,11 @@ app.post("/api/like/:targetId", auth, async (req, res) => {
 // ============================================================
 app.get("/api/matches", auth, async (req, res) => {
   const myId = new mongoose.Types.ObjectId(req.user.id);
-  const myMatches = await Match.find({
+  const myConnects = await Connect.find({
     $or: [{ user1Id: myId }, { user2Id: myId }]
   });
 
-  const result = await Promise.all(myMatches.map(async m => {
+  const result = await Promise.all(myConnects.map(async m => {
     const otherId = m.user1Id.equals(myId) ? m.user2Id : m.user1Id;
     const other = await User.findById(otherId);
     const lastMsg = await Message.findOne({ matchId: m._id }).sort({ createdAt: -1 });
@@ -418,7 +418,7 @@ app.get("/api/admin/stats", auth, async (req, res) => {
   const today = new Date(); today.setHours(0,0,0,0);
   res.json({
     totalUsers: await User.countDocuments(),
-    totalMatches: await Match.countDocuments(),
+    totalConnects: await Connect.countDocuments(),
     totalMessages: await Message.countDocuments(),
     todaySignups: await User.countDocuments({ createdAt: { $gte: today } }),
   });
