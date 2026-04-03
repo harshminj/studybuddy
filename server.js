@@ -75,23 +75,6 @@ const Rating = mongoose.model("Rating", RatingSchema);
 mongoose.connect(MONGO_URI).then(async () => {
   console.log("✅ MongoDB connected!");
 
-  // ── Migrate: rename 'likes' collection -> 'connects' ──────────────
-  try {
-    const db = mongoose.connection.db;
-    const collections = await db.listCollections().toArray();
-    const names = collections.map(c => c.name);
-    if (names.includes("likes") && !names.includes("connects")) {
-      await db.collection("likes").rename("connects");
-      console.log("✅ Migration: 'likes' renamed to 'connects'");
-    } else if (names.includes("connects")) {
-      console.log("✅ 'connects' collection already exists");
-    } else {
-      console.log("ℹ️  Starting fresh with 'connects' collection");
-    }
-  } catch (migErr) {
-    console.error("⚠️  Migration error:", migErr.message);
-  }
-
   // Remove old admin if exists
   await User.deleteOne({ email: "admin@studybuddy.com" });
   // Seed real admin if not exists
